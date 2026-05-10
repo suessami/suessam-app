@@ -4,6 +4,11 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
+st.set_page_config(
+    page_title="쑤샘영어 스마트 리포트", 
+    page_icon="🎓", 
+    layout="wide"
+
 # --- [1. 학생 정보 & 비밀번호 DB (원장님 요청 30명 전체)] ---
 STUDENT_INFO = {
     "권도해": "7236", "이재민": "2052", "송연주": "8526", "이다원": "6765", "송하준": "1703",
