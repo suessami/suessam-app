@@ -4,8 +4,26 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# --- [1. 앱 설정: 이 코드가 무조건 1등으로 와야 합니다!] ---
+# --- [1. 앱 설정 & 디지털 대문 디자인] ---
 st.set_page_config(page_title="쑤샘영어 스마트 리포트", page_icon="🎓", layout="wide")
+
+# 사진 대신 코드로 만든 세련된 블루 배너입니다.
+st.markdown("""
+    <div style="background: linear-gradient(to right, #0f172a, #1e293b, #0f172a); 
+                padding: 30px; border-radius: 15px; border: 2px solid #38bdf8; 
+                text-align: center; box-shadow: 0px 4px 15px rgba(56, 189, 248, 0.3);">
+        <h1 style="color: #facc15; margin-bottom: 5px; font-family: 'Pretendard', sans-serif;">
+            🎓 쑤샘영어 SMART REPORT
+        </h1>
+        <p style="color: #38bdf8; font-size: 1.2rem; margin-top: 0;">
+            SUE ENGLISH INNOVATION SYSTEM
+        </p>
+        <div style="background-color: rgba(56, 189, 248, 0.1); padding: 10px; border-radius: 10px; color: white;">
+            혁신적인 우리 아이 AI 스마트 평가 리포트
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+st.write("") # 간격 띄우기
 
 # --- [2. 학생 정보 & 비밀번호 DB (30명 완벽 매칭)] ---
 STUDENT_INFO = {
