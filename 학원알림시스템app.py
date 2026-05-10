@@ -4,21 +4,26 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import os
+import json
 
-# --- [쑤샘영어: 연결 설정] ---
-current_dir = os.path.dirname(os.path.abspath(__file__))
-key_path = os.path.join(current_dir, "credentials.json")
+# --- [쑤샘영어: 연결 설정 (Secrets 금고 방식)] ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 
 try:
-    creds = ServiceAccountCredentials.from_json_keyfile_name(key_path, scope)
+    # 스트림릿 금고(Secrets)에서 열쇠 정보를 가져와서 다시 조립합니다
+    creds_raw = st.secrets["gcp_service_account"]
+    creds_info = json.loads(creds_raw)
+    creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_info, scope)
     client = gspread.authorize(creds)
+    # 원장님의 구글 시트 ID
     SHEET_ID = "1cI7yQIne4ZWdICRhVoqw18P16ZN81kT5LOnDN1ipfhE"
     sheet = client.open_by_key(SHEET_ID).sheet1
     connection_success = True
-except:
+except Exception as e:
+    st.error(f"⚠️ 구글 시트 연결에 실패했습니다. (원인: {e})")
     connection_success = False
 
+# 학생 명단 (필요시 수정하세요)
 STUDENT_LIST = ["권도해", "이재민", "송연주", "이다원", "송하준", "허민우", "이소미", "경지윤", "정주안", "천준영", "하윤성", "권담", "이태은", "박시윤", "송서윤", "김유주", "손다희", "김세영", "김민승", "유지아", "조성준", "김하람", "최승아", "진시우", "이주빈", "이진서", "최연아", "박기범", "김건희", "김규리"]
 
 st.set_page_config(page_title="쑤샘영어 스마트 시스템", layout="wide")
@@ -47,6 +52,7 @@ if menu == "선생님 입력용":
             v_1 = v2.number_input("단어 1차 맞은 개수", 0)
             v_2 = v3.number_input("단어 2차 맞은 개수", 0)
             
+            # --- [중등부 자동 환산 로직] ---
             l_1, l_2 = 0, 0
             if grade == "초등":
                 lc1, lc2 = st.columns(2)
@@ -60,9 +66,9 @@ if menu == "선생님 입력용":
                 m2_c = lc4.number_input("2차 맞은 개수", 0, 100, 0)
                 l_1 = round((m1_c / m1_t) * 100)
                 l_2 = round((m2_c / m2_t) * 100)
+                st.write(f"💡 중등 환산 점수: 1차 {l_1}점 / 2차 {l_2}점")
             
             st.markdown("### 📑 영역별 성취도")
-            # --- [수행도에 '-' 옵션 추가] ---
             r1, r2 = st.columns([3, 1])
             r_con = r1.text_input("리딩 수업 내용")
             r_p = r2.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
@@ -72,7 +78,7 @@ if menu == "선생님 입력용":
             g_p = g2.selectbox("문법 수행도", ["-", "우수", "보통", "노력요함"])
             
             st.markdown("### 📸 사진 첨부")
-            uploaded_file = st.file_uploader("학습 사진 선택", type=['png', 'jpg', 'jpeg'])
+            uploaded_file = st.file_uploader("학습 사진 선택 (png, jpg)", type=['png', 'jpg', 'jpeg'])
             
             comment = st.text_area("📝 선생님 코멘트")
             submit = st.form_submit_button("평가서 저장 및 전송")
@@ -94,6 +100,7 @@ elif menu == "학부모 조회용":
             student_data = df[df['학생 이름'] == search_name]
             
             if not student_data.empty:
+                # 최신순으로 정렬해서 보여줌
                 for i in range(len(student_data)-1, -1, -1):
                     row = student_data.iloc[i]
                     with st.expander(f"📅 {row['평가 날짜']} 리포트 (클릭)"):
@@ -103,7 +110,7 @@ elif menu == "학부모 조회용":
                         c2.write(f"**출결:** {row['출결']}")
                         c3.write(f"**단어:** {row['단어 1차 맞은 개수']}/{row['단어 전체 문항']}")
                         
-                        # 듣기 점수 표시: 2차가 0이면 1차만 표시
+                        # 듣기 점수 표시 개선
                         if row['듣기 2차 점수'] == 0:
                             l_text = f"{row['듣기 1차 점수']}점"
                         else:
@@ -112,8 +119,6 @@ elif menu == "학부모 조회용":
                         
                         st.markdown("---")
                         st.markdown("#### 📚 수업 내용 및 성취도")
-                        
-                        # 수행도가 '-'가 아닐 때만 표시
                         if row['리딩 수행도'] != "-":
                             rc1, rc2 = st.columns([3, 1])
                             rc1.write(f"**리딩:** {row['리딩 수업 내용']}")
@@ -127,5 +132,5 @@ elif menu == "학부모 조회용":
                         st.info(f"💡 **선생님 소견:** {row['코멘트']}")
             else:
                 st.warning("등록된 데이터가 없습니다.")
-        except:
-            st.error("데이터를 불러오던 중 오류가 발생했습니다.")
+        except Exception as e:
+            st.error(f"데이터를 불러오던 중 오류가 발생했습니다. (오류: {e})")
