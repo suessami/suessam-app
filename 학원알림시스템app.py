@@ -78,7 +78,7 @@ if menu == "선생님 입력용":
             if st.form_submit_button("평가서 저장하기"):
                 pw = STUDENT_INFO.get(name, "0000")
                 # f"'{pw}"로 앞자리 0을 지켜서 저장합니다.
-                new_row = [str(date), name, "구분", hw, att, v_t, v_1, 0, l_1, 0, r_con, r_p, g_con, g_p, comment, f"'{pw}"]
+                new_row = [str(date), name, "구분", hw, att, v_t, v_1, 0, l_1, 0, r_con, r_p, g_con, g_p, comment, pw]
                 sheet.append_row(new_row)
                 st.success(f"🎉 {name} 저장 완료! (비번: {pw})")
 
