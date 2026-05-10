@@ -28,16 +28,17 @@ menu = st.sidebar.selectbox("메뉴 선택", ["선생님 입력용", "학부모 
 if menu == "선생님 입력용":
     st.title("🎓 쑤샘영어 스마트 평가 시스템")
     pw = st.sidebar.text_input("관리자 비밀번호", type="password")
+    
     if pw == "1234":
-        with st.form("input_form", clear_on_submit=True):
-            col1, col2 = st.columns(2)
-            with col1:
-                name = st.selectbox("👤 학생 이름", STUDENT_LIST)
-                date = st.date_input("📅 평가 날짜", datetime.now())
-            with col2:
-                grade = st.selectbox("🏫 구분", ["초등", "중등"])
-                homework = st.radio("📚 과제", ["완료", "미흡", "미완료"], horizontal=True)
+        col_n, col_g = st.columns(2)
+        with col_n:
+            name = st.selectbox("👤 학생 이름", STUDENT_LIST)
+        with col_g:
+            grade = st.selectbox("🏫 구분", ["초등", "중등"])
             
+        with st.form("input_form", clear_on_submit=True):
+            date = st.date_input("📅 평가 날짜", datetime.now())
+            homework = st.radio("📚 과제", ["완료", "미흡", "미완료"], horizontal=True)
             attendance = st.radio("✅ 출결", ["양호", "지각", "결석"], horizontal=True)
             
             st.markdown("### 📊 테스트 결과")
@@ -46,26 +47,41 @@ if menu == "선생님 입력용":
             v_1 = v2.number_input("단어 1차 맞은 개수", 0)
             v_2 = v3.number_input("단어 2차 맞은 개수", 0)
             
-            l1, l2 = st.columns(2)
-            l_1 = l1.number_input("듣기 1차 점수", 0)
-            l_2 = l2.number_input("듣기 2차 점수", 0)
+            l_1, l_2 = 0, 0
+            if grade == "초등":
+                lc1, lc2 = st.columns(2)
+                l_1 = lc1.number_input("듣기 1차 점수 (0~100)", 0, 100)
+                l_2 = lc2.number_input("듣기 2차 점수 (0~100)", 0, 100)
+            else: 
+                lc1, lc2, lc3, lc4 = st.columns(4)
+                m1_t = lc1.number_input("1차 전체 문항", 1, 100, 20)
+                m1_c = lc2.number_input("1차 맞은 개수", 0, 100, 0)
+                m2_t = lc3.number_input("2차 전체 문항", 1, 100, 20)
+                m2_c = lc4.number_input("2차 맞은 개수", 0, 100, 0)
+                l_1 = round((m1_c / m1_t) * 100)
+                l_2 = round((m2_c / m2_t) * 100)
             
             st.markdown("### 📑 영역별 성취도")
+            # --- [수행도에 '-' 옵션 추가] ---
             r1, r2 = st.columns([3, 1])
             r_con = r1.text_input("리딩 수업 내용")
-            r_p = r2.selectbox("리딩 수행도", ["우수", "보통", "노력요함"])
+            r_p = r2.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
             
             g1, g2 = st.columns([3, 1])
             g_con = g1.text_input("문법 수업 내용")
-            g_p = g2.selectbox("문법 수행도", ["우수", "보통", "노력요함"])
+            g_p = g2.selectbox("문법 수행도", ["-", "우수", "보통", "노력요함"])
+            
+            st.markdown("### 📸 사진 첨부")
+            uploaded_file = st.file_uploader("학습 사진 선택", type=['png', 'jpg', 'jpeg'])
             
             comment = st.text_area("📝 선생님 코멘트")
             submit = st.form_submit_button("평가서 저장 및 전송")
             
             if submit and connection_success:
-                new_row = [str(date), name, grade, homework, attendance, v_t, v_1, v_2, l_1, l_2, r_con, r_p, g_con, g_p, comment]
+                photo_status = "사진있음" if uploaded_file else "없음"
+                new_row = [str(date), name, grade, homework, attendance, v_t, v_1, v_2, l_1, l_2, r_con, r_p, g_con, g_p, comment, photo_status]
                 sheet.append_row(new_row)
-                st.success("기록이 성공적으로 저장되었습니다!")
+                st.success(f"🎉 {name} 학생의 기록이 저장되었습니다!")
 
 elif menu == "학부모 조회용":
     st.title("🔍 학생 평가 결과 조회")
@@ -86,20 +102,30 @@ elif menu == "학부모 조회용":
                         c1.write(f"**과제:** {row['과제 여부']}")
                         c2.write(f"**출결:** {row['출결']}")
                         c3.write(f"**단어:** {row['단어 1차 맞은 개수']}/{row['단어 전체 문항']}")
-                        c4.write(f"**듣기:** {row['듣기 1차 점수']}/{row['듣기 2차 점수']}")
+                        
+                        # 듣기 점수 표시: 2차가 0이면 1차만 표시
+                        if row['듣기 2차 점수'] == 0:
+                            l_text = f"{row['듣기 1차 점수']}점"
+                        else:
+                            l_text = f"1차:{row['듣기 1차 점수']} / 2차:{row['듣기 2차 점수']}"
+                        c4.write(f"**듣기:** {l_text}")
                         
                         st.markdown("---")
                         st.markdown("#### 📚 수업 내용 및 성취도")
-                        rc1, rc2 = st.columns([3, 1])
-                        rc1.write(f"**리딩:** {row['리딩 수업 내용']}")
-                        rc2.write(f"**수행도:** {row['리딩 수행도']}")
                         
-                        gc1, gc2 = st.columns([3, 1])
-                        gc1.write(f"**문법:** {row['문법 수업 내용']}")
-                        gc2.write(f"**수행도:** {row['문법 수행도']}")
+                        # 수행도가 '-'가 아닐 때만 표시
+                        if row['리딩 수행도'] != "-":
+                            rc1, rc2 = st.columns([3, 1])
+                            rc1.write(f"**리딩:** {row['리딩 수업 내용']}")
+                            rc2.write(f"**수행도:** {row['리딩 수행도']}")
+                        
+                        if row['문법 수행도'] != "-":
+                            gc1, gc2 = st.columns([3, 1])
+                            gc1.write(f"**문법:** {row['문법 수업 내용']}")
+                            gc2.write(f"**수행도:** {row['문법 수행도']}")
                         
                         st.info(f"💡 **선생님 소견:** {row['코멘트']}")
             else:
                 st.warning("등록된 데이터가 없습니다.")
-        except Exception as e:
-            st.error(f"데이터를 불러오는 중 오류가 발생했습니다. 시트의 제목줄을 다시 확인해주세요.")
+        except:
+            st.error("데이터를 불러오던 중 오류가 발생했습니다.")
