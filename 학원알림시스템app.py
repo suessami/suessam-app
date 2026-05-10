@@ -53,8 +53,7 @@ if menu == "선생님 입력용":
             if st.form_submit_button("저장하기"):
                 pw = STUDENT_INFO.get(name, "0000")
                 # P열(16번째 열)이 비밀번호가 되도록 딱 16개의 데이터를 넣습니다.
-                new_row = [str(date), name, "구분", hw, att, v_t, v_1, 0, 0, 0, "", "", "", "", comment, pw]
-                sheet.append_row(new_row)
+                new_row = new_row = [str(date), name, "구분", hw, att, v_t, v_1, 0, 0, 0, "", "", "", "", comment, f"'{pw}"]                sheet.append_row(new_row)
                 st.success(f"🎉 {name} 저장 완료! (비밀번호: {pw})")
 
 elif menu == "학부모 조회용":
