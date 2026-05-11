@@ -4,7 +4,7 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# --- [1. 앱 설정 & 디자인] ---
+# --- [1. 앱 설정 & 디지털 대문 디자인] ---
 st.set_page_config(page_title="쑤샘영어 스마트 리포트", page_icon="🎓", layout="wide")
 
 st.markdown("""
@@ -50,6 +50,7 @@ try:
     }
     creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
     client = gspread.authorize(creds)
+    # 원장님의 구글 시트 고유 키값
     sheet = client.open_by_key("1cI7yQIne4ZWdICRhVoqw18P16ZN81kT5LOnDN1ipfhE").sheet1
     connection_success = True
 except Exception as e:
@@ -66,6 +67,7 @@ if menu == "선생님 입력용":
         name = st.selectbox("👤 학생 선택", STUDENT_LIST)
         with st.form("input_form", clear_on_submit=True):
             date = st.date_input("📅 평가 날짜", datetime.now())
+            level = st.radio("🏫 학교급 선택", ["초등", "중등"], horizontal=True)
             hw = st.radio("📚 과제 여부", ["완료", "미흡", "미완료"], horizontal=True)
             att = st.radio("✅ 출결 상태", ["양호", "지각", "결석"], horizontal=True)
             
@@ -85,7 +87,7 @@ if menu == "선생님 입력용":
             st.subheader("📖 리딩 (Reading)")
             r_con = st.text_input("리딩 수업 내용")
             r_p = st.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
-            reading_voca = st.selectbox("📚 리딩 단어 암기", ["열심히 외움", "대충 외움", "공부한 노력이 보이지 않음"])
+            reading_voca = st.selectbox("📚 리딩 단어 암기 상태", ["열심히 외움", "대충 외움", "공부한 노력이 보이지 않음"])
             reading_sent = st.selectbox("✍️ 리딩 지문 영작 및 해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
 
             # 3. 문법 섹션
@@ -97,7 +99,7 @@ if menu == "선생님 입력용":
             # 4. 라이팅 섹션
             st.markdown("---")
             st.subheader("✒️ 라이팅 (Writing)")
-            writing_feedback = st.text_area("영어홀릭 라이팅 상세 피드백")
+            writing_feedback = st.text_area("영어홀릭 라이팅 피드백")
 
             # 5. 종합 의견
             st.markdown("---")
@@ -109,14 +111,14 @@ if menu == "선생님 입력용":
                 new_row = [
                     str(date),          # A: 평가 날짜
                     name,               # B: 학생 이름
-                    "일반",             # C: 구분
+                    level,              # C: 구분
                     hw,                 # D: 과제 여부
                     att,                # E: 출결
                     v_t,                # F: 단어 전체 문항
                     v_1,                # G: 단어 1차 맞은 개수
-                    v_2,                # H: 단어 2차 맞은 개수 (추가!)
+                    v_2,                # H: 단어 2차 맞은 개수
                     l_1,                # I: 듣기 1차 점수
-                    0,                  # J: 듣기 2차 점수 (필요시 0)
+                    0,                  # J: 듣기 2차 점수 (0)
                     r_con,              # K: 리딩 수업 내용
                     r_p,                # L: 리딩 수행도
                     g_con,              # M: 문법 수업 내용
@@ -128,7 +130,7 @@ if menu == "선생님 입력용":
                     pw                  # S: 비밀번호
                 ]
                 sheet.append_row(new_row)
-                st.success(f"🎉 {name} 학생 리포트 저장 완료! (단어 2차 포함)")
+                st.success(f"🎉 {name}({level}) 학생의 리포트가 성공적으로 저장되었습니다!")
 
 # [B. 학부모 조회용]
 elif menu == "학부모 조회용":
@@ -142,6 +144,7 @@ elif menu == "학부모 조회용":
         try:
             all_v = sheet.get_all_values()
             df = pd.DataFrame(all_v[1:], columns=all_v[0])
+            # 이름과 비밀번호를 공백 제거 후 비교
             res = df[(df['학생 이름'] == name_in) & (df['비밀번호'].astype(str).str.strip() == str(pw_in).strip())]
             
             if not res.empty:
@@ -152,15 +155,27 @@ elif menu == "학부모 조회용":
                         col1, col2, col3, col4 = st.columns(4)
                         col1.metric("과제", row['과제 여부'])
                         col2.metric("출결", row['출결'])
-                        # 단어 2차가 있으면 함께 보여주기
-                        v_display = f"{row['단어 1차 맞은 개수']}/{row['단어 전체 문항']}"
-                        if row['단어 2차 맞은 개수'] != '0' and row['단어 2차 맞은 개수'] != '':
-                            v_display += f" (2차: {row['단어 2차 맞은 개수']})"
-                        col3.metric("단어", v_display)
+                        
+                        # --- 단어 점수 환산 로직 (중등 100점 만점) ---
+                        v_total = int(row['단어 전체 문항']) if row['단어 전체 문항'] else 0
+                        v_1 = int(row['단어 1차 맞은 개수']) if row['단어 1차 맞은 개수'] else 0
+                        v_2 = int(row['단어 2차 맞은 개수']) if row['단어 2차 맞은 개수'] else 0
+                        
+                        if row['구분'] == "중등" and v_total > 0:
+                            v_score = round((v_1 / v_total) * 100)
+                            v_label = f"{v_score}점"
+                            v_delta = f"{v_1}/{v_total}"
+                            if v_2 > 0: v_delta += f" (2차: {v_2})"
+                            col3.metric("단어 점수", v_label, v_delta)
+                        else:
+                            v_val = f"{v_1}/{v_total}"
+                            if v_2 > 0: v_val += f" (2차: {v_2})"
+                            col3.metric("단어", v_val)
+                            
                         col4.metric("듣기", f"{row['듣기 1차 점수']}점")
                         
                         st.markdown("---")
-                        st.markdown("#### 📖 성취도 상세")
+                        st.markdown("#### 📖 상세 성취도")
                         st.write(f"**📚 리딩 단어 암기:** {row['리딩 단어']}")
                         st.write(f"**✍️ 리딩 지문 영작 및 해석:** {row['리딩 지문 영작 및 해석']}")
                         st.info(f"**📝 영어홀릭 라이팅:**\n\n{row['영어홀릭 라이팅']}")
@@ -169,11 +184,33 @@ elif menu == "학부모 조회용":
                         st.markdown("#### 📚 수업 내용")
                         if row['리딩 수업 내용']: st.write(f"**리딩:** {row['리딩 수업 내용']} ({row['리딩 수행도']})")
                         if row['문법 수업 내용']: st.write(f"**문법:** {row['문법 수업 내용']} ({row['문법 수행도']})")
-                        st.warning(f"📝 **종합 소견:** {row['코멘트']}")
+                        st.warning(f"📝 **선생님 종합 소견:** {row['코멘트']}")
                 
+                # --- [카톡 로고 디자인 상담 버튼] ---
                 st.divider()
-                st.link_button("💬 원장님과 1:1 상담하기", "https://pf.kakao.com/_xxxxxx")
+                st.markdown(
+                    f"""
+                    <a href="http://qr.kakao.com/talk/sue1984808" target="_blank" style="text-decoration: none;">
+                        <div style="
+                            display: flex;
+                            align-items: center;
+                            justify-content: center;
+                            background-color: #FEE500;
+                            color: #191919;
+                            padding: 12px 24px;
+                            border-radius: 12px;
+                            font-weight: bold;
+                            font-size: 16px;
+                            box-shadow: 0px 4px 10px rgba(0,0,0,0.1);
+                            ">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg" width="25" style="margin-right: 10px;">
+                            원장님과 1:1 상담하기
+                        </div>
+                    </a>
+                    """,
+                    unsafe_allow_html=True
+                )
                 
             else: st.error("정보가 일치하지 않습니다.")
         except Exception as e: 
-            st.error(f"조회 중 오류가 발생했습니다. (시트 열 제목 확인 필요)")
+            st.error(f"조회 중 오류가 발생했습니다. (시트의 열 제목을 다시 확인해 주세요)")
