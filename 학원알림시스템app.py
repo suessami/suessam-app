@@ -5,8 +5,8 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 # --- [1. 앱 설정 & 로고 강제 고정] ---
-# 아이폰과 카톡이 "이건 완전히 새로운 주소다!"라고 착각하게 v=40을 붙였습니다.
-SUE_LOGO_URL = "https://raw.githubusercontent.com/sue-reading/sue-report/main/S_Logo_transparent_v2.png?v=40"
+# 아이폰과 카톡이 "완전 새 사이트"로 인식하도록 버전(v=45)을 높였습니다.
+SUE_LOGO_URL = "https://raw.githubusercontent.com/sue-reading/sue-report/main/S_Logo_transparent_v2.png?v=45"
 
 st.set_page_config(
     page_title="쑤샘영어 스마트 리포트",
@@ -14,23 +14,26 @@ st.set_page_config(
     layout="wide"
 )
 
-# 아이폰 홈 화면 + 문자/카톡 미리보기를 동시에 잡는 '헤드' 설정
+# [필살기] 모든 SNS와 스마트폰이 스트림릿 로고를 잊게 만드는 강제 메타 태그
 st.markdown(f"""
     <head>
+        <link rel="icon" href="{SUE_LOGO_URL}">
         <link rel="apple-touch-icon" href="{SUE_LOGO_URL}">
         <link rel="apple-touch-icon-precomposed" href="{SUE_LOGO_URL}">
-        <link rel="icon" href="{SUE_LOGO_URL}">
+        
         <meta property="og:title" content="🎓 쑤샘영어 SMART REPORT">
         <meta property="og:description" content="우리 아이 AI 스마트 평가 리포트">
         <meta property="og:image" content="{SUE_LOGO_URL}">
+        <meta property="og:image:width" content="1200">
+        <meta property="og:image:height" content="630">
         <meta property="og:type" content="website">
+        
         <meta name="apple-mobile-web-app-title" content="쑤샘영어">
         <meta name="apple-mobile-web-app-capable" content="yes">
     </head>
     <style>
         @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
         * {{ font-family: 'Pretendard', sans-serif !important; }}
-        /* 메인 배너 스타일 */
         .main-header {{
             background: linear-gradient(to right, #0f172a, #1e293b, #0f172a); 
             padding: 30px; border-radius: 15px; border: 2px solid #38bdf8; 
@@ -47,7 +50,7 @@ st.markdown("""
     </div>
     """, unsafe_allow_html=True)
 
-# --- [2. 학생 데이터 & 시트 연결] ---
+# --- [2. 학생 정보 & 시트 데이터] ---
 STUDENT_INFO = {
     "권도해": "7236", "이재민": "2052", "송연주": "8526", "이다원": "6765", "송하준": "1703",
     "허민우": "7007", "이소미": "5520", "경지윤": "6671", "정주안": "0321", "천준영": "3837",
@@ -75,51 +78,52 @@ try:
     sheet = client.open_by_key("1cI7yQIne4ZWdICRhVoqw18P16ZN81kT5LOnDN1ipfhE").sheet1
     connection_success = True
 except Exception as e:
-    st.error(f"연결 오류: {e}")
+    st.error(f"구글 시트 연결 오류: {e}")
     connection_success = False
 
-# --- [3. 메뉴 & 조회/입력 로직] ---
+# --- [3. 메뉴 구성] ---
 menu = st.sidebar.selectbox("메뉴 선택", ["학부모 조회용", "선생님 입력용"])
 
 if menu == "선생님 입력용":
-    st.title("🎓 성적 입력")
-    if st.sidebar.text_input("비밀번호", type="password") == "1234":
+    st.title("🎓 성적 입력 (관리자)")
+    if st.sidebar.text_input("관리자 비밀번호", type="password") == "1234":
         name = st.selectbox("👤 학생 선택", STUDENT_LIST)
         with st.form("input_form", clear_on_submit=True):
-            date = st.date_input("📅 날짜", datetime.now())
-            level = st.radio("🏫 구분", ["초등", "중등"], horizontal=True)
-            hw = st.radio("📚 과제", ["완료", "미흡", "미완료"], horizontal=True)
-            att = st.radio("✅ 출결", ["양호", "지각", "결석"], horizontal=True)
+            date = st.date_input("📅 평가 날짜", datetime.now())
+            level = st.radio("🏫 학교급", ["초등", "중등"], horizontal=True)
+            hw = st.radio("📚 과제 여부", ["완료", "미흡", "미완료"], horizontal=True)
+            att = st.radio("✅ 출결 상태", ["양호", "지각", "결석"], horizontal=True)
             
-            st.markdown("### 📊 성적 데이터")
+            st.markdown("### 📊 성적 입력")
             v_t = st.number_input("단어 전체", value=60)
-            c1, c2 = st.columns(2)
-            with c1: v_1 = st.number_input("1차 맞은 개수", 0)
-            with c2: v_2 = st.number_input("2차 맞은 개수", 0)
+            col1, col2 = st.columns(2)
+            with col1: v_1 = st.number_input("1차 맞은 개수", 0)
+            with col2: v_2 = st.number_input("2차 맞은 개수", 0)
             l_1 = st.number_input("듣기 점수", 0, 100)
 
-            r_con = st.text_input("리딩 내용")
+            st.markdown("---")
+            r_con = st.text_input("리딩 수업 내용")
             r_p = st.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
-            reading_voca = st.selectbox("📚 리딩 단어", ["열심히 외움", "대충 외움", "노력 필요"])
-            reading_sent = st.selectbox("✍️ 리딩 영작", ["열심히 했음", "조금 더 공부", "노력 필요"])
+            reading_voca = st.selectbox("📚 리딩 단어 암기", ["열심히 외움", "대충 외움", "노력 필요"])
+            reading_sent = st.selectbox("✍️ 리딩 지문 영작/해석", ["열심히 공부했음", "조금 더 공부하기", "노력 필요"])
             
-            g_con = st.text_input("문법 내용")
+            g_con = st.text_input("문법 수업 내용")
             g_p = st.selectbox("문법 수행도", ["-", "우수", "보통", "노력요함"])
 
             writing_feedback = st.text_area("✒️ 라이팅 피드백")
-            comment = st.text_area("🌟 종합 소견")
+            comment = st.text_area("🌟 선생님 종합 소견")
 
-            if st.form_submit_button("저장하기"):
+            if st.form_submit_button("리포트 저장하기"):
                 pw = STUDENT_INFO.get(name, "0000")
                 new_row = [str(date), name, level, hw, att, v_t, v_1, v_2, l_1, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
                 sheet.append_row(new_row)
-                st.success(f"🎉 {name} 리포트 저장 완료!")
+                st.success(f"🎉 {name} 학생의 리포트가 저장되었습니다!")
 
 elif menu == "학부모 조회용":
-    st.title("🔍 우리 아이 리포트 조회")
-    ca, cb = st.columns(2)
-    with ca: name_in = st.text_input("👤 학생 이름")
-    with cb: pw_in = st.text_input("🔑 비밀번호", type="password")
+    st.title("🔍 우리 아이 스마트 리포트")
+    c1, c2 = st.columns(2)
+    with c1: name_in = st.text_input("👤 학생 이름")
+    with c2: pw_in = st.text_input("🔑 비밀번호", type="password")
     
     if name_in and pw_in and connection_success:
         try:
@@ -129,7 +133,7 @@ elif menu == "학부모 조회용":
             
             if not res.empty:
                 for _, row in res.iloc[::-1].iterrows():
-                    with st.expander(f"📅 {row['평가 날짜']} 리포트"):
+                    with st.expander(f"📅 {row['평가 날짜']} 리포트 확인"):
                         st.markdown("#### 📊 학습 현황")
                         m1, m2, m3, m4 = st.columns(4)
                         m1.metric("과제", row['과제 여부'])
@@ -152,10 +156,10 @@ elif menu == "학부모 조회용":
                 
                 st.divider()
                 st.markdown("""
-                    <div style="display: flex; align-items: center; background-color: #FEE500; border-radius: 12px; padding: 20px;">
+                    <div style="display: flex; align-items: center; background-color: #FEE500; border-radius: 12px; padding: 20px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1);">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg" width="40" style="margin-right:15px;">
                         <div style="color: #191919; font-weight: bold; font-size: 16px;">
-                            궁금하신 점은 평소처럼 카톡으로 편하게 말씀해 주세요! 😊
+                            리포트 보시고 궁금하신 점은 평소처럼 카톡으로 편하게 말씀해 주세요! 😊
                         </div>
                     </div>
                     """, unsafe_allow_html=True)
