@@ -4,7 +4,7 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# --- [1. 앱 설정 & 브랜드 헤더] ---
+# --- [1. 앱 설정] ---
 st.set_page_config(page_title="쑤샘영어 스마트 리포트", page_icon="🎓", layout="wide")
 
 st.markdown("""
@@ -48,97 +48,127 @@ try:
     sheet = client.open_by_key("1cI7yQIne4ZWdICRhVoqw18P16ZN81kT5LOnDN1ipfhE").sheet1
     connection_success = True
 except Exception as e:
-    st.error(f"데이터베이스 연결 오류: {e}")
+    st.error(f"연결 오류: {e}")
     connection_success = False
 
 menu = st.sidebar.selectbox("메뉴 선택", ["학부모 조회용", "선생님 입력용"])
 
-# --- [입력 로직] ---
+# --- [A. 선생님 입력용] ---
 if menu == "선생님 입력용":
-    st.title("🎓 평가 데이터 입력")
-    if st.sidebar.text_input("관리자 암호", type="password") == "1234":
-        name = st.selectbox("👤 학생 이름 선택", STUDENT_LIST)
-        with st.form("score_form", clear_on_submit=True):
-            date = st.date_input("📅 날짜", datetime.now())
-            level = st.radio("🏫 학교급", ["초등", "중등"], horizontal=True)
+    st.title("🎓 성적 입력 시스템")
+    if st.sidebar.text_input("관리자 비밀번호", type="password") == "1234":
+        name = st.selectbox("👤 학생 선택", STUDENT_LIST)
+        with st.form("input_form", clear_on_submit=True):
+            date = st.date_input("📅 평가 날짜", datetime.now())
+            level = st.radio("🏫 구분", ["초등", "중등"], horizontal=True)
             hw = st.radio("📚 과제", ["완료", "미흡", "미완료"], horizontal=True)
             att = st.radio("✅ 출결", ["양호", "지각", "결석"], horizontal=True)
             
-            st.markdown("### 📊 단어 평가")
-            v_total = st.number_input("전체 문항", value=60)
-            c1, c2 = st.columns(2)
-            with c1: v_1 = st.number_input("1차 정답 개수", 0)
-            with c2: v_2 = st.number_input("2차 정답 개수", 0)
+            # --- 섹션 1: 단어 & 듣기 ---
+            st.markdown("### 📊 단어 & 듣기")
+            v_t = st.number_input("단어 전체 문항", value=60)
+            col1, col2 = st.columns(2)
+            with col1: v_1 = st.number_input("단어 1차 맞은 개수", 0)
+            with col2: v_2 = st.number_input("단어 2차 맞은 개수", 0)
             
-            st.markdown("### 🎧 듣기 평가")
             if level == "중등":
                 lc1, lc2 = st.columns(2)
                 with lc1: l_total = st.number_input("듣기 전체 문항", value=20)
-                with lc2: l_correct = st.number_input("듣기 정답 개수", 0)
-                final_l_score = 0
+                with lc2: l_correct = st.number_input("듣기 맞은 개수", 0)
+                l_score = 0
             else:
-                final_l_score = st.number_input("듣기 점수 (초등)", 0, 100)
+                l_score = st.number_input("듣기 점수 (초등)", 0, 100)
                 l_total, l_correct = 0, 0
 
+            # --- 섹션 2: 리딩 ---
             st.markdown("---")
-            st.subheader("📖 수업 상세 피드백")
-            r_con = st.text_input("리딩 학습 내용 (수업 없을 시 비움)")
-            reading_voca = st.selectbox("📚 리딩 단어", ["-", "열심히 외움", "대충 외움", "노력 필요"])
-            reading_sent = st.selectbox("✍️ 리딩 영작/해석", ["-", "열심히 했음", "조금 더 공부하기", "노력 필요"])
+            st.markdown("### 📖 리딩")
+            r_con = st.text_input("리딩 수업 내용 (없으면 비움)")
+            r_p = st.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
+            reading_voca = st.selectbox("📚 리딩 단어 암기", ["-", "열심히 외움", "대충 외움", "노력 필요"])
+            reading_sent = st.selectbox("✍️ 리딩 지문 영작/해석", ["-", "열심히 했음", "조금 더 공부", "노력 필요"])
             
-            g_con = st.text_input("문법 학습 내용 (수업 없을 시 비움)")
-            writing_feedback = st.text_area("✒️ 라이팅 피드백")
-            comment = st.text_area("🌟 선생님 코멘트")
+            # --- 섹션 3: 문법 ---
+            st.markdown("---")
+            st.markdown("### ✍️ 문법")
+            g_con = st.text_input("문법 수업 내용 (없으면 비움)")
+            g_p = st.selectbox("문법 수행도", ["-", "우수", "보통", "노력요함"])
 
-            if st.form_submit_button("리포트 전송"):
-                # 듣기 자동 계산 (중등)
-                if level == "중등":
-                    final_l_score = round((l_correct / l_total * 100)) if l_total > 0 else 0
-                
+            # --- 섹션 4: 영어홀릭 라이팅 ---
+            st.markdown("---")
+            st.markdown("### ✒️ 영어홀릭 라이팅")
+            writing_feedback = st.text_area("라이팅 피드백")
+
+            # --- 섹션 5: 종합 소견 ---
+            st.markdown("---")
+            st.markdown("### 🌟 선생님 코멘트")
+            comment = st.text_area("아이의 이번 수업 특징 및 격려 메시지")
+
+            if st.form_submit_button("리포트 저장하기"):
+                if level == "중등" and l_total > 0:
+                    l_score = round((l_correct / l_total) * 100)
                 pw = STUDENT_INFO.get(name, "0000")
-                new_data = [str(date), name, level, hw, att, v_total, v_1, v_2, final_l_score, 0, r_con, "-", g_con, "-", reading_voca, reading_sent, writing_feedback, comment, pw]
-                sheet.append_row(new_data)
-                st.success(f"🎉 {name} 학생의 데이터가 성공적으로 저장되었습니다.")
+                new_row = [str(date), name, level, hw, att, v_t, v_1, v_2, l_score, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
+                sheet.append_row(new_row)
+                st.success(f"🎉 {name} 학생의 리포트가 성공적으로 저장되었습니다!")
 
-# --- [조회 로직] ---
+# --- [B. 학부모 조회용] ---
 elif menu == "학부모 조회용":
     st.title("🔍 우리 아이 스마트 리포트")
-    ca, cb = st.columns(2)
-    with ca: n_in = st.text_input("👤 학생 이름")
-    with cb: p_in = st.text_input("🔑 비밀번호", type="password")
+    c1, c2 = st.columns(2)
+    with c1: name_in = st.text_input("👤 학생 이름")
+    with c2: pw_in = st.text_input("🔑 비밀번호", type="password")
     
-    if n_in and p_in and connection_success:
+    if name_in and pw_in and connection_success:
         try:
             all_v = sheet.get_all_values()
             df = pd.DataFrame(all_v[1:], columns=all_v[0])
-            res = df[(df['학생 이름'] == n_in) & (df['비밀번호'].astype(str).str.strip() == str(p_in).strip())]
+            res = df[(df['학생 이름'] == name_in) & (df['비밀번호'].astype(str).str.strip() == str(pw_in).strip())]
             
             if not res.empty:
                 for _, row in res.iloc[::-1].iterrows():
                     with st.expander(f"📅 {row['평가 날짜']} 리포트 확인"):
-                        st.markdown("#### 📊 학습 성적")
+                        # --- 1. 학습 현황 ---
+                        st.markdown("#### 📊 학습 현황")
                         m1, m2, m3, m4 = st.columns(4)
                         m1.metric("과제", row['과제 여부'])
                         m2.metric("출결", row['출결'])
                         
-                        # 단어 100점 환산
                         vt = int(row['단어 전체 문항']) if row['단어 전체 문항'] else 0
                         v1 = int(row['단어 1차 맞은 개수']) if row['단어 1차 맞은 개수'] else 0
                         v2 = int(row['단어 2차 맞은 개수']) if row['단어 2차 맞은 개수'] else 0
-                        v_score = round((v1 / vt * 100)) if vt > 0 else 0
-                        v_delta = f"{v1}/{vt}" + (f" (2차:{v2})" if v2 > 0 else "")
-                        m3.metric("단어 점수", f"{v_score}점", v_delta)
-                        
+                        v_score = round((v1/vt)*100) if vt > 0 else 0
+                        v_desc = f"{v1}/{vt}" + (f" (2차:{v2})" if v2 > 0 else "")
+                        m3.metric("단어 점수", f"{v_score}점", v_desc)
                         m4.metric("듣기 점수", f"{row['듣기 1차 점수']}점")
                         
-                        st.markdown("---")
-                        if row['리딩 단어'] != "-": st.write(f"**📚 리딩 단어:** {row['리딩 단어']}")
-                        if row['리딩 지문 영작 및 해석'] != "-": st.write(f"**✍️ 리딩 영작/해석:** {row['리딩 지문 영작 및 해석']}")
-                        
+                        # --- 2. 리딩 ---
+                        if row['리딩 수업 내용'] or row['리딩 단어'] != "-" or row['리딩 지문 영작 및 해석'] != "-":
+                            st.markdown("---")
+                            st.markdown("#### 📖 리딩")
+                            if row['리딩 수업 내용']: st.write(f"**학습 내용:** {row['리딩 수업 내용']}")
+                            if row['리딩 단어'] != "-": st.write(f"**단어 암기:** {row['리딩 단어']}")
+                            if row['리딩 지문 영작 및 해석'] != "-": st.write(f"**영작/해석:** {row['리딩 지문 영작 및 해석']}")
+                            if row['리딩 수행도'] != "-": st.write(f"**수행도:** {row['리딩 수행도']}")
+
+                        # --- 3. 문법 ---
+                        if row['문법 수업 내용'] or row['문법 수행도'] != "-":
+                            st.markdown("---")
+                            st.markdown("#### ✍️ 문법")
+                            if row['문법 수업 내용']: st.write(f"**학습 내용:** {row['문법 수업 내용']}")
+                            if row['문법 수행도'] != "-": st.write(f"**수행도:** {row['문법 수행도']}")
+
+                        # --- 4. 영어홀릭 라이팅 ---
                         if row['영어홀릭 라이팅']:
-                            st.info(f"**📝 라이팅 피드백:**\n\n{row['영어홀릭 라이팅']}")
-                        st.warning(f"📝 **종합 소견:** {row['코멘트']}")
+                            st.markdown("---")
+                            st.markdown("#### ✒️ 영어홀릭 라이팅")
+                            st.info(row['영어홀릭 라이팅'])
+
+                        # --- 5. 종합 소견 ---
+                        st.markdown("---")
+                        st.warning(f"🌟 **선생님 소견:** {row['코멘트']}")
+                
                 st.divider()
-                st.markdown("<div style='background-color:#FEE500; padding:15px; border-radius:10px; color:black; font-weight:bold; text-align:center;'>궁금하신 점은 카톡으로 말씀해 주세요! 😊</div>", unsafe_allow_html=True)
+                st.markdown("<div style='background-color:#FEE500; padding:15px; border-radius:10px; color:black; font-weight:bold; text-align:center;'>리포트 보시고 궁금하신 점은 카톡주세요! 😊</div>", unsafe_allow_html=True)
             else: st.error("정보가 일치하지 않습니다.")
-        except Exception as e: st.error(f"데이터 조회 오류: {e}")
+        except Exception as e: st.error(f"오류: {e}")
