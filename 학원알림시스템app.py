@@ -22,7 +22,6 @@ st.markdown("""
         </div>
     </div>
     """, unsafe_allow_html=True)
-st.write("") 
 
 # --- [2. 학생 정보 & 비밀번호 DB] ---
 STUDENT_INFO = {
@@ -56,12 +55,10 @@ except Exception as e:
     st.error(f"연결 에러: {e}")
     connection_success = False
 
-# --- [4. 앱 메뉴 구성] ---
 menu = st.sidebar.selectbox("메뉴 선택", ["학부모 조회용", "선생님 입력용"])
 
-# [A. 선생님 입력용]
 if menu == "선생님 입력용":
-    st.title("🎓 성적 입력 시스템 (관리자)")
+    st.title("🎓 성적 입력 시스템")
     if st.sidebar.text_input("비밀번호", type="password") == "1234":
         name = st.selectbox("👤 학생 선택", STUDENT_LIST)
         with st.form("input_form", clear_on_submit=True):
@@ -70,21 +67,18 @@ if menu == "선생님 입력용":
             hw = st.radio("📚 과제 여부", ["완료", "미흡", "미완료"], horizontal=True)
             att = st.radio("✅ 출결 상태", ["양호", "지각", "결석"], horizontal=True)
             
-            st.markdown("---")
             st.markdown("### 📊 단어 & 듣기")
             v_t = st.number_input("단어 전체 문항", value=60, min_value=0)
-            col_v1, col_v2 = st.columns(2)
-            with col_v1:
-                v_1 = st.number_input("단어 1차 맞은 개수", value=0, min_value=0)
-            with col_v2:
-                v_2 = st.number_input("단어 2차 맞은 개수", value=0, min_value=0)
+            c1, c2 = st.columns(2)
+            with c1: v_1 = st.number_input("단어 1차 맞은 개수", 0)
+            with c2: v_2 = st.number_input("단어 2차 맞은 개수", 0)
             l_1 = st.number_input("듣기 1차 점수", 0, 100)
 
             st.markdown("---")
             st.subheader("📖 리딩 (Reading)")
             r_con = st.text_input("리딩 수업 내용")
             r_p = st.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
-            reading_voca = st.selectbox("📚 리딩 단어 암기 상태", ["열심히 외움", "대충 외움", "공부한 노력이 보이지 않음"])
+            reading_voca = st.selectbox("📚 리딩 단어 암기", ["열심히 외움", "대충 외움", "공부한 노력이 보이지 않음"])
             reading_sent = st.selectbox("✍️ 리딩 지문 영작 및 해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
 
             st.markdown("---")
@@ -97,21 +91,16 @@ if menu == "선생님 입력용":
             writing_feedback = st.text_area("영어홀릭 라이팅 피드백")
 
             st.markdown("---")
-            comment = st.text_area("🌟 선생님 종합 소견")
+            comment = st.text_area("🌟 선생님 코멘트")
 
             if st.form_submit_button("평가서 저장하기"):
                 pw = STUDENT_INFO.get(name, "0000")
-                new_row = [
-                    str(date), name, level, hw, att, v_t, v_1, v_2, l_1, 0,
-                    r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw
-                ]
+                new_row = [str(date), name, level, hw, att, v_t, v_1, v_2, l_1, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
                 sheet.append_row(new_row)
-                st.success(f"🎉 {name}({level}) 학생의 리포트 저장 완료!")
+                st.success(f"🎉 {name}({level}) 저장 완료!")
 
-# [B. 학부모 조회용]
 elif menu == "학부모 조회용":
     st.title("🔍 쑤샘영어 우리 아이 리포트 조회")
-    st.info("아이 이름과 등록된 비밀번호를 입력해 주세요.")
     c1, c2 = st.columns(2)
     with c1: name_in = st.text_input("👤 학생 이름")
     with c2: pw_in = st.text_input("🔑 비밀번호", type="password")
@@ -123,7 +112,6 @@ elif menu == "학부모 조회용":
             res = df[(df['학생 이름'] == name_in) & (df['비밀번호'].astype(str).str.strip() == str(pw_in).strip())]
             
             if not res.empty:
-                st.success(f"✅ {name_in} 학생의 리포트입니다.")
                 for _, row in res.iloc[::-1].iterrows():
                     with st.expander(f"📅 {row['평가 날짜']} 리포트 확인"):
                         st.markdown("#### 📊 학습 현황")
@@ -133,34 +121,25 @@ elif menu == "학부모 조회용":
                         
                         v_total = int(row['단어 전체 문항']) if row['단어 전체 문항'] else 0
                         v_1 = int(row['단어 1차 맞은 개수']) if row['단어 1차 맞은 개수'] else 0
-                        v_2 = int(row['단어 2차 맞은 개수']) if row['단어 2차 맞은 개수'] else 0
-                        
                         if row['구분'] == "중등" and v_total > 0:
                             v_score = round((v_1 / v_total) * 100)
-                            col3.metric("단어 점수", f"{v_score}점", f"{v_1}/{v_total} (2차:{v_2})")
+                            col3.metric("단어 점수", f"{v_score}점", f"{v_1}/{v_total}")
                         else:
-                            col3.metric("단어", f"{v_1}/{v_total}", f"2차: {v_2}")
-                            
+                            col3.metric("단어", f"{v_1}/{v_total}")
                         col4.metric("듣기", f"{row['듣기 1차 점수']}점")
                         
                         st.markdown("---")
-                        st.markdown("#### 📖 성취도 상세")
-                        st.write(f"**📚 리딩 단어 암기:** {row['리딩 단어']}")
-                        st.write(f"**✍️ 리딩 문장 영작 및 해석:** {row['리딩 지문 영작 및 해석']}")
-                        st.info(f"**📝 영어홀릭 라이팅:**\n\n{row['영어홀릭 라이팅']}")
-                        
-                        st.markdown("---")
-                        st.markdown("#### 📚 수업 내용")
-                        if row['리딩 수업 내용']: st.write(f"**리딩:** {row['리딩 수업 내용']} ({row['리딩 수행도']})")
-                        if row['문법 수업 내용']: st.write(f"**문법:** {row['문법 수업 내용']} ({row['문법 수행도']})")
-                        st.warning(f"📝 **선생님 소견:** {row['코멘트']}")
+                        st.write(f"**📚 리딩 단어:** {row['리딩 단어']}")
+                        st.write(f"**✍️ 리딩 영작/해석:** {row['리딩 지문 영작 및 해석']}")
+                        st.info(f"**📝 라이팅:** {row['영어홀릭 라이팅']}")
+                        st.warning(f"📝 **종합 소견:** {row['코멘트']}")
                 
-                # --- [카톡 연결 링크 최종 수정] ---
+                # --- 원장님 아이디 sue1984808 직접 연결 버튼 ---
                 st.divider()
                 st.markdown(
                     f"""
                     <a href="https://qr.kakao.com/talk/sue1984808" target="_blank" style="text-decoration: none;">
-                        <div style="display: flex; align-items: center; justify-content: center; background-color: #FEE500; color: #191919; padding: 12px 24px; border-radius: 12px; font-weight: bold; font-size: 16px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1);">
+                        <div style="display: flex; align-items: center; justify-content: center; background-color: #FEE500; color: #191919; padding: 12px 24px; border-radius: 12px; font-weight: bold; font-size: 16px;">
                             <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg" width="25" style="margin-right: 10px;">
                             원장님과 1:1 상담하기
                         </div>
@@ -171,4 +150,4 @@ elif menu == "학부모 조회용":
                 
             else: st.error("정보가 일치하지 않습니다.")
         except Exception as e: 
-            st.error(f"조회 중 오류가 발생했습니다. (시트 열 제목 확인 필요)")
+            st.error(f"오류 발생: {e}")
