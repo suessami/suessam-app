@@ -3,23 +3,46 @@ import pandas as pd
 from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
+import os
 
 # --- [1. 앱 설정 & 디자인] ---
-# 깃허브에 올리신 로고 파일명과 똑같이 써주세요!
+# 깃허브에 올리신 로고 파일명을 변수에 담습니다.
 SUE_LOGO = "S_Logo_transparent_v2.png"
 
 st.set_page_config(
     page_title="쑤샘영어 스마트 리포트",
-    page_icon=SUE_LOGO, # 브라우저 탭 아이콘을 우리 로고로!
+    page_icon=SUE_LOGO, # 브라우저 탭 아이콘
     layout="wide"
 )
 
-# [버전 3.0] 모바일 홈 화면에서 노션 로고 대신 '진짜 앱'처럼 보이게 하는 설정
+# 모바일 홈 화면에서 노션 대신 'S 로고'가 확실히 뜨게 하는 설정
+# 주소가 불분명하면 노션이 뜨므로, 파일이 앱과 같은 폴더에 있다는 것을 명시합니다.
 st.markdown(f"""
     <link rel="apple-touch-icon" href="{SUE_LOGO}">
     <link rel="icon" href="{SUE_LOGO}">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="쑤샘영어">
+    <style>
+        /* 폰트나 전체적인 느낌을 조금 더 깔끔하게 다듬습니다 */
+        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+        * {{ font-family: 'Pretendard', sans-serif; }}
+    </style>
+    """, unsafe_allow_html=True)
+
+st.markdown("""
+    <div style="background: linear-gradient(to right, #0f172a, #1e293b, #0f172a); 
+                padding: 30px; border-radius: 15px; border: 2px solid #38bdf8; 
+                text-align: center; box-shadow: 0px 4px 15px rgba(56, 189, 248, 0.3);">
+        <h1 style="color: #facc15; margin-bottom: 5px;">
+            🎓 쑤샘영어 SMART REPORT
+        </h1>
+        <p style="color: #38bdf8; font-size: 1.2rem; margin-top: 0;">
+            SUE ENGLISH INNOVATION SYSTEM
+        </p>
+        <div style="background-color: rgba(56, 189, 248, 0.1); padding: 10px; border-radius: 10px; color: white;">
+            혁신적인 우리 아이 AI 스마트 평가 리포트
+        </div>
+    </div>
     """, unsafe_allow_html=True)
 st.write("") 
 
@@ -35,6 +58,7 @@ STUDENT_INFO = {
 STUDENT_LIST = sorted(list(STUDENT_INFO.keys()))
 
 # --- [3. 구글 시트 연결] ---
+# (원장님 코드와 동일하므로 연결 로직 유지)
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 try:
     creds_data = st.secrets["gcp_service_account"]
@@ -90,7 +114,6 @@ if menu == "선생님 입력용":
 
             if st.form_submit_button("평가서 저장하기"):
                 pw = STUDENT_INFO.get(name, "0000")
-                # A~S열 순서 (총 19개) 일치
                 new_row = [str(date), name, level, hw, att, v_t, v_1, v_2, l_1, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
                 sheet.append_row(new_row)
                 st.success(f"🎉 {name}({level}) 리포트 저장 완료!")
