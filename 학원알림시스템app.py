@@ -3,32 +3,28 @@ import pandas as pd
 from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
-import os
 
 # --- [1. 앱 설정 & 디자인] ---
-# 깃허브에 올리신 로고 파일명을 변수에 담습니다.
-SUE_LOGO = "S_Logo_transparent_v2.png"
+# 아이폰이 가장 잘 인식하는 '직접 이미지 링크'입니다.
+# (원장님이 깃허브에 올리신 파일의 Raw 주소를 제가 미리 가공해 두었습니다)
+SUE_LOGO_URL = "https://raw.githubusercontent.com/sue-reading/sue-report/main/S_Logo_transparent_v2.png"
 
 st.set_page_config(
     page_title="쑤샘영어 스마트 리포트",
-    page_icon=SUE_LOGO, # 브라우저 탭 아이콘
+    page_icon=SUE_LOGO_URL, 
     layout="wide"
 )
 
-# 모바일 홈 화면에서 노션 대신 'S 로고'가 확실히 뜨게 하는 설정
-# 주소가 불분명하면 노션이 뜨므로, 파일이 앱과 같은 폴더에 있다는 것을 명시합니다.
+# 아이폰 '홈 화면에 추가' 시 노션을 밀어내고 우리 로고를 강제 적용하는 코드
 st.markdown(f"""
-    <link rel="apple-touch-icon" href="{SUE_LOGO}">
-    <link rel="icon" href="{SUE_LOGO}">
-    <meta name="mobile-web-app-capable" content="yes">
+    <link rel="apple-touch-icon" href="{SUE_LOGO_URL}">
+    <link rel="icon" href="{SUE_LOGO_URL}">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="쑤샘영어">
-    <style>
-        /* 폰트나 전체적인 느낌을 조금 더 깔끔하게 다듬습니다 */
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        * {{ font-family: 'Pretendard', sans-serif; }}
-    </style>
     """, unsafe_allow_html=True)
 
+# ... (이하 기존 코드 동일)
 st.markdown("""
     <div style="background: linear-gradient(to right, #0f172a, #1e293b, #0f172a); 
                 padding: 30px; border-radius: 15px; border: 2px solid #38bdf8; 
