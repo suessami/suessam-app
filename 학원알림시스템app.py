@@ -137,13 +137,9 @@ elif menu == "학부모 조회용":
                         
                         if row['구분'] == "중등" and v_total > 0:
                             v_score = round((v_1 / v_total) * 100)
-                            v_delta = f"{v_1}/{v_total}"
-                            if v_2 > 0: v_delta += f" (2차: {v_2})"
-                            col3.metric("단어 점수", f"{v_score}점", v_delta)
+                            col3.metric("단어 점수", f"{v_score}점", f"{v_1}/{v_total} (2차:{v_2})")
                         else:
-                            v_val = f"{v_1}/{v_total}"
-                            if v_2 > 0: v_val += f" (2차: {v_2})"
-                            col3.metric("단어", v_val)
+                            col3.metric("단어", f"{v_1}/{v_total}", f"2차: {v_2}")
                             
                         col4.metric("듣기", f"{row['듣기 1차 점수']}점")
                         
@@ -159,11 +155,11 @@ elif menu == "학부모 조회용":
                         if row['문법 수업 내용']: st.write(f"**문법:** {row['문법 수업 내용']} ({row['문법 수행도']})")
                         st.warning(f"📝 **선생님 소견:** {row['코멘트']}")
                 
-                # --- [카톡 연결 주소 수정 완료!] ---
+                # --- [카톡 연결 링크 최종 수정] ---
                 st.divider()
                 st.markdown(
                     f"""
-                    <a href="https://pf.kakao.com/_qmxixjG/chat" target="_blank" style="text-decoration: none;">
+                    <a href="https://qr.kakao.com/talk/sue1984808" target="_blank" style="text-decoration: none;">
                         <div style="display: flex; align-items: center; justify-content: center; background-color: #FEE500; color: #191919; padding: 12px 24px; border-radius: 12px; font-weight: bold; font-size: 16px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1);">
                             <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg" width="25" style="margin-right: 10px;">
                             원장님과 1:1 상담하기
