@@ -7,25 +7,19 @@ from oauth2client.service_account import ServiceAccountCredentials
 # --- [1. 앱 설정 & 디자인] ---
 st.set_page_config(page_title="쑤샘영어 스마트 리포트", page_icon="🎓", layout="wide")
 
-# 카톡 버튼을 노란색으로 만들기 위한 스타일 설정
+# 카톡 노란색 버튼 스타일 적용 (안정성을 위해 공식 버튼에 스타일만 입힘)
 st.markdown("""
     <style>
     div.stLinkButton > a {
         background-color: #FEE500 !important;
         color: #191919 !important;
         border: none !important;
-        padding: 15px 25px !important;
+        padding: 12px 20px !important;
         border-radius: 12px !important;
         font-weight: bold !important;
-        font-size: 18px !important;
+        width: 100% !important;
         display: flex !important;
         justify-content: center !important;
-        align-items: center !important;
-        width: 100% !important;
-    }
-    div.stLinkButton > a:hover {
-        background-color: #FDE500 !important;
-        color: #000000 !important;
     }
     </style>
     """, unsafe_allow_html=True)
@@ -88,38 +82,35 @@ if menu == "선생님 입력용":
         name = st.selectbox("👤 학생 선택", STUDENT_LIST)
         with st.form("input_form", clear_on_submit=True):
             date = st.date_input("📅 평가 날짜", datetime.now())
-            level = st.radio("🏫 학교급", ["초등", "중등"], horizontal=True)
+            level = st.radio("🏫 학교급 선택", ["초등", "중등"], horizontal=True)
             hw = st.radio("📚 과제 여부", ["완료", "미흡", "미완료"], horizontal=True)
             att = st.radio("✅ 출결 상태", ["양호", "지각", "결석"], horizontal=True)
             
             st.markdown("### 📊 단어 & 듣기")
-            v_t = st.number_input("단어 전체 문항", value=60)
-            c1, c2 = st.columns(2)
-            with c1: v_1 = st.number_input("단어 1차 맞은 개수", 0)
-            with c2: v_2 = st.number_input("단어 2차 맞은 개수", 0)
-            l_1 = st.number_input("듣기 1차 점수", 0, 100)
+            v_total = st.number_input("단어 전체 문항", value=60)
+            col1, col2 = st.columns(2)
+            with col1: v1 = st.number_input("단어 1차 맞은 개수", 0)
+            with col2: v2 = st.number_input("단어 2차 맞은 개수", 0)
+            l1 = st.number_input("듣기 점수", 0, 100)
 
-            st.markdown("---")
-            st.subheader("📖 리딩 (Reading)")
+            st.markdown("### 📖 수업 상세 평가")
             r_con = st.text_input("리딩 수업 내용")
             r_p = st.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
             reading_voca = st.selectbox("📚 리딩 단어 암기", ["열심히 외움", "대충 외움", "공부한 노력이 보이지 않음"])
-            reading_sent = st.selectbox("✍️ 리딩 문장 영작 및 해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
-
-            st.markdown("---")
-            st.subheader("📝 문법 (Grammar)")
+            reading_sent = st.selectbox("✍️ 리딩 지문 영작/해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
+            
             g_con = st.text_input("문법 수업 내용")
             g_p = st.selectbox("문법 수행도", ["-", "우수", "보통", "노력요함"])
 
-            st.markdown("---")
-            writing_feedback = st.text_area("✒️ 영어홀릭 라이팅 상세 피드백")
-            comment = st.text_area("🌟 선생님 종합 소견")
+            writing_feedback = st.text_area("✒️ 영어홀릭 라이팅 피드백")
+            comment = st.text_area("🌟 선생님 코멘트")
 
             if st.form_submit_button("평가서 저장하기"):
                 pw = STUDENT_INFO.get(name, "0000")
-                new_row = [str(date), name, level, hw, att, v_t, v_1, v_2, l_1, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
+                # A~S열 순서 (총 19개)
+                new_row = [str(date), name, level, hw, att, v_total, v1, v2, l1, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
                 sheet.append_row(new_row)
-                st.success(f"🎉 {name}({level}) 저장 완료!")
+                st.success(f"🎉 {name}({level}) 리포트가 안전하게 저장되었습니다!")
 
 # [B. 학부모 조회용]
 elif menu == "학부모 조회용":
@@ -135,22 +126,21 @@ elif menu == "학부모 조회용":
             res = df[(df['학생 이름'] == name_in) & (df['비밀번호'].astype(str).str.strip() == str(pw_in).strip())]
             
             if not res.empty:
-                st.success(f"✅ {name_in} 학생의 리포트입니다.")
                 for _, row in res.iloc[::-1].iterrows():
                     with st.expander(f"📅 {row['평가 날짜']} 리포트 확인"):
                         st.markdown("#### 📊 학습 현황")
-                        col1, col2, col3, col4 = st.columns(4)
-                        col1.metric("과제", row['과제 여부'])
-                        col2.metric("출결", row['출결'])
+                        m1, m2, m3, m4 = st.columns(4)
+                        m1.metric("과제", row['과제 여부'])
+                        m2.metric("출결", row['출결'])
                         
-                        v_total = int(row['단어 전체 문항']) if row['단어 전체 문항'] else 0
-                        v_1 = int(row['단어 1차 맞은 개수']) if row['단어 1차 맞은 개수'] else 0
-                        if row['구분'] == "중등" and v_total > 0:
-                            v_score = round((v_1 / v_total) * 100)
-                            col3.metric("단어 점수", f"{v_score}점", f"{v_1}/{v_total}")
+                        # 단어 점수 로직 (중등 100점 환산)
+                        vt = int(row['단어 전체 문항']) if row['단어 전체 문항'] else 0
+                        v1 = int(row['단어 1차 맞은 개수']) if row['단어 1차 맞은 개수'] else 0
+                        if row['구분'] == "중등" and vt > 0:
+                            m3.metric("단어 점수", f"{round((v1/vt)*100)}점", f"{v1}/{vt}")
                         else:
-                            col3.metric("단어", f"{v_1}/{v_total}")
-                        col4.metric("듣기", f"{row['듣기 1차 점수']}점")
+                            m3.metric("단어", f"{v1}/{vt}")
+                        m4.metric("듣기", f"{row['듣기 1차 점수']}점")
                         
                         st.markdown("---")
                         st.write(f"**📚 리딩 단어:** {row['리딩 단어']}")
@@ -158,12 +148,11 @@ elif menu == "학부모 조회용":
                         st.info(f"**📝 라이팅 피드백:**\n\n{row['영어홀릭 라이팅']}")
                         st.warning(f"📝 **종합 소견:** {row['코멘트']}")
                 
-                # --- [원장님과 1:1 상담하기 버튼 - 진짜 최종 솔루션] ---
+                # --- [원장님표 다정한 상담 버튼] ---
                 st.divider()
-                # st.link_button은 클릭이 절대 차단되지 않습니다.
-                # PC에서는 에러가 날 수 있으나, 모바일에서는 카카오톡이 정상적으로 열립니다.
-                st.link_button("💬 원장님과 1:1 상담하기", "https://qr.kakao.com/talk/sue1984808")
+                # 💬 이모지를 넣고 문구를 다정하게 수정했습니다.
+                st.link_button("💬 리포트 보시고 궁금한 점은 카톡으로 말씀해 주세요", "https://qr.kakao.com/talk/sue1984808")
                 
             else: st.error("정보가 일치하지 않습니다.")
         except Exception as e: 
-            st.error(f"오류 발생: {e}")
+            st.error(f"오류가 발생했습니다: {e}")
