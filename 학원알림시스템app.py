@@ -53,16 +53,19 @@ except Exception as e:
 
 menu = st.sidebar.selectbox("메뉴 선택", ["학부모 조회용", "선생님 입력용"])
 
-# --- [A. 선생님 입력용] ---
+# --- [선생님 입력용 로직] ---
 if menu == "선생님 입력용":
     st.title("🎓 성적 입력 시스템")
     if st.sidebar.text_input("관리자 비밀번호", type="password") == "1234":
         name = st.selectbox("👤 학생 선택", STUDENT_LIST)
+        
+        # [해결 포인트] 구분을 폼 밖으로 꺼내서 듣기 입력창이 즉시 바뀌게 합니다.
+        level = st.radio("🏫 학교급 구분", ["초등", "중등"], horizontal=True)
+        
         with st.form("input_form", clear_on_submit=True):
             date = st.date_input("📅 평가 날짜", datetime.now())
-            level = st.radio("🏫 구분", ["초등", "중등"], horizontal=True)
-            hw = st.radio("📚 과제", ["완료", "미흡", "미완료"], horizontal=True)
-            att = st.radio("✅ 출결", ["양호", "지각", "결석"], horizontal=True)
+            hw = st.radio("📚 과제 여부", ["완료", "미흡", "미완료"], horizontal=True)
+            att = st.radio("✅ 출결 상태", ["양호", "지각", "결석"], horizontal=True)
             
             # --- 섹션 1: 단어 & 듣기 ---
             st.markdown("### 📊 단어 & 듣기")
@@ -75,10 +78,10 @@ if menu == "선생님 입력용":
                 lc1, lc2 = st.columns(2)
                 with lc1: l_total = st.number_input("듣기 전체 문항", value=20)
                 with lc2: l_correct = st.number_input("듣기 맞은 개수", 0)
-                l_score = 0
+                l_score = 0 # 폼 제출 시 자동 계산
             else:
                 l_score = st.number_input("듣기 점수 (초등)", 0, 100)
-                l_total, l_correct = 0, 0
+                l_total, l_correct = 1, 0 # 계산 에러 방지용
 
             # --- 섹션 2: 리딩 ---
             st.markdown("---")
@@ -86,7 +89,7 @@ if menu == "선생님 입력용":
             r_con = st.text_input("리딩 수업 내용 (없으면 비움)")
             r_p = st.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
             reading_voca = st.selectbox("📚 리딩 단어 암기", ["-", "열심히 외움", "대충 외움", "노력 필요"])
-            reading_sent = st.selectbox("✍️ 리딩 지문 영작/해석", ["-", "열심히 했음", "조금 더 공부", "노력 필요"])
+            reading_sent = st.selectbox("✍️ 리딩 지문 영작/해석", ["-", "열심히 했음", "조금 더 공부하기", "노력 필요"])
             
             # --- 섹션 3: 문법 ---
             st.markdown("---")
@@ -101,18 +104,20 @@ if menu == "선생님 입력용":
 
             # --- 섹션 5: 종합 소견 ---
             st.markdown("---")
-            st.markdown("### 🌟 선생님 코멘트")
-            comment = st.text_area("아이의 이번 수업 특징 및 격려 메시지")
+            st.markdown("### 🌟 선생님 종합 소견")
+            comment = st.text_area("선생님 코멘트")
 
             if st.form_submit_button("리포트 저장하기"):
-                if level == "중등" and l_total > 0:
-                    l_score = round((l_correct / l_total) * 100)
+                # 점수 환산 로직 (100점 만점)
+                if level == "중등":
+                    l_score = round((l_correct / l_total) * 100) if l_total > 0 else 0
+                
                 pw = STUDENT_INFO.get(name, "0000")
                 new_row = [str(date), name, level, hw, att, v_t, v_1, v_2, l_score, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
                 sheet.append_row(new_row)
-                st.success(f"🎉 {name} 학생의 리포트가 성공적으로 저장되었습니다!")
+                st.success(f"🎉 {name}({level}) 리포트 저장 완료!")
 
-# --- [B. 학부모 조회용] ---
+# --- [학부모 조회용 로직] ---
 elif menu == "학부모 조회용":
     st.title("🔍 우리 아이 스마트 리포트")
     c1, c2 = st.columns(2)
@@ -123,13 +128,13 @@ elif menu == "학부모 조회용":
         try:
             all_v = sheet.get_all_values()
             df = pd.DataFrame(all_v[1:], columns=all_v[0])
-            res = df[(df['학생 이름'] == name_in) & (df['비밀번호'].astype(str).str.strip() == str(pw_in).strip())]
+            res = df[(df['학생 이름'] == name_in) & (df['비밀번호'].astype(str).str.strip() == str(p_in).strip())]
             
             if not res.empty:
                 for _, row in res.iloc[::-1].iterrows():
                     with st.expander(f"📅 {row['평가 날짜']} 리포트 확인"):
-                        # --- 1. 학습 현황 ---
-                        st.markdown("#### 📊 학습 현황")
+                        # --- 1. 단어 & 듣기 ---
+                        st.markdown("#### 📊 단어 & 듣기")
                         m1, m2, m3, m4 = st.columns(4)
                         m1.metric("과제", row['과제 여부'])
                         m2.metric("출결", row['출결'])
@@ -167,7 +172,6 @@ elif menu == "학부모 조회용":
                         # --- 5. 종합 소견 ---
                         st.markdown("---")
                         st.warning(f"🌟 **선생님 소견:** {row['코멘트']}")
-                
                 st.divider()
                 st.markdown("<div style='background-color:#FEE500; padding:15px; border-radius:10px; color:black; font-weight:bold; text-align:center;'>리포트 보시고 궁금하신 점은 카톡주세요! 😊</div>", unsafe_allow_html=True)
             else: st.error("정보가 일치하지 않습니다.")
