@@ -81,7 +81,7 @@ if menu == "선생님 입력용":
             r_con = st.text_input("리딩 수업 내용")
             r_p = st.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
             reading_voca = st.selectbox("📚 리딩 단어 암기", ["열심히 외움", "대충 외움", "공부한 노력이 보이지 않음"])
-            reading_sent = st.selectbox("✍️ 리딩 문장 영작/해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
+            reading_sent = st.selectbox("✍️ 리딩 지문 영작/해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
             
             g_con = st.text_input("문법 수업 내용")
             g_p = st.selectbox("문법 수행도", ["-", "우수", "보통", "노력요함"])
@@ -91,10 +91,10 @@ if menu == "선생님 입력용":
 
             if st.form_submit_button("평가서 저장하기"):
                 pw = STUDENT_INFO.get(name, "0000")
-                # A~S열 순서 (총 19개)
+                # A~S열 순서 (총 19개) 일치
                 new_row = [str(date), name, level, hw, att, v_t, v_1, v_2, l_1, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
                 sheet.append_row(new_row)
-                st.success(f"🎉 {name}({level}) 리포트가 안전하게 저장되었습니다!")
+                st.success(f"🎉 {name}({level}) 리포트 저장 완료!")
 
 # [B. 학부모 조회용]
 elif menu == "학부모 조회용":
@@ -138,9 +138,22 @@ elif menu == "학부모 조회용":
                         st.info(f"**📝 라이팅 피드백:**\n\n{row['영어홀릭 라이팅']}")
                         st.warning(f"📝 **종합 소견:** {row['코멘트']}")
                 
-                # --- [원장님표 다정한 안내 문구로 교체] ---
+                # --- [카톡 스타일 노란색 안내 박스] ---
                 st.divider()
-                st.success("💬 리포트 내용에 대해 궁금하신 점은 평소처럼 **카카오톡**으로 편하게 말씀해 주세요! 원장님이 확인 후 답변 드리겠습니다. 😊")
+                st.markdown(
+                    f"""
+                    <div style="display: flex; align-items: center; background-color: #FEE500; border-radius: 12px; padding: 20px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1);">
+                        <div style="margin-right: 15px;">
+                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg" width="40">
+                        </div>
+                        <div style="color: #191919; font-weight: bold; font-size: 16px; line-height: 1.5;">
+                            리포트 보시고 궁금하신 점은<br>
+                            평소처럼 카톡으로 편하게 말씀해 주세요! 😊
+                        </div>
+                    </div>
+                    """, 
+                    unsafe_allow_html=True
+                )
                 
             else: st.error("정보가 일치하지 않습니다.")
         except Exception as e: 
