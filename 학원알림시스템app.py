@@ -72,11 +72,12 @@ if menu == "선생님 입력용":
             # 1. 단어 및 듣기 섹션
             st.markdown("---")
             st.markdown("### 📊 단어 & 듣기")
+            v_t = st.number_input("단어 전체 문항", value=60, min_value=0)
             col_v1, col_v2 = st.columns(2)
             with col_v1:
-                v_t = st.number_input("단어 전체 문항", value=60, min_value=0)
-            with col_v2:
                 v_1 = st.number_input("단어 1차 맞은 개수", value=0, min_value=0)
+            with col_v2:
+                v_2 = st.number_input("단어 2차 맞은 개수", value=0, min_value=0)
             l_1 = st.number_input("듣기 1차 점수", 0, 100)
 
             # 2. 리딩 섹션
@@ -113,9 +114,9 @@ if menu == "선생님 입력용":
                     att,                # E: 출결
                     v_t,                # F: 단어 전체 문항
                     v_1,                # G: 단어 1차 맞은 개수
-                    0,                  # H: 단어 2차 맞은 개수 (0)
+                    v_2,                # H: 단어 2차 맞은 개수 (추가!)
                     l_1,                # I: 듣기 1차 점수
-                    0,                  # J: 듣기 2차 점수 (0)
+                    0,                  # J: 듣기 2차 점수 (필요시 0)
                     r_con,              # K: 리딩 수업 내용
                     r_p,                # L: 리딩 수행도
                     g_con,              # M: 문법 수업 내용
@@ -127,7 +128,7 @@ if menu == "선생님 입력용":
                     pw                  # S: 비밀번호
                 ]
                 sheet.append_row(new_row)
-                st.success(f"🎉 {name} 학생 리포트 저장 완료! (A~S열)")
+                st.success(f"🎉 {name} 학생 리포트 저장 완료! (단어 2차 포함)")
 
 # [B. 학부모 조회용]
 elif menu == "학부모 조회용":
@@ -141,7 +142,6 @@ elif menu == "학부모 조회용":
         try:
             all_v = sheet.get_all_values()
             df = pd.DataFrame(all_v[1:], columns=all_v[0])
-            # 이름과 비밀번호(문자열 처리) 비교
             res = df[(df['학생 이름'] == name_in) & (df['비밀번호'].astype(str).str.strip() == str(pw_in).strip())]
             
             if not res.empty:
@@ -152,7 +152,11 @@ elif menu == "학부모 조회용":
                         col1, col2, col3, col4 = st.columns(4)
                         col1.metric("과제", row['과제 여부'])
                         col2.metric("출결", row['출결'])
-                        col3.metric("단어", f"{row['단어 1차 맞은 개수']}/{row['단어 전체 문항']}")
+                        # 단어 2차가 있으면 함께 보여주기
+                        v_display = f"{row['단어 1차 맞은 개수']}/{row['단어 전체 문항']}"
+                        if row['단어 2차 맞은 개수'] != '0' and row['단어 2차 맞은 개수'] != '':
+                            v_display += f" (2차: {row['단어 2차 맞은 개수']})"
+                        col3.metric("단어", v_display)
                         col4.metric("듣기", f"{row['듣기 1차 점수']}점")
                         
                         st.markdown("---")
@@ -168,7 +172,7 @@ elif menu == "학부모 조회용":
                         st.warning(f"📝 **종합 소견:** {row['코멘트']}")
                 
                 st.divider()
-                st.link_button("💬 원장님과 1:1 상담하기", "https://pf.kakao.com/_xxxxxx") # 카톡 링크를 넣어주세요
+                st.link_button("💬 원장님과 1:1 상담하기", "https://pf.kakao.com/_xxxxxx")
                 
             else: st.error("정보가 일치하지 않습니다.")
         except Exception as e: 
