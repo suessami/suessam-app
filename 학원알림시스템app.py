@@ -22,6 +22,7 @@ st.markdown("""
         </div>
     </div>
     """, unsafe_allow_html=True)
+st.write("") 
 
 # --- [2. 학생 정보 & 비밀번호 DB] ---
 STUDENT_INFO = {
@@ -58,7 +59,7 @@ except Exception as e:
 menu = st.sidebar.selectbox("메뉴 선택", ["학부모 조회용", "선생님 입력용"])
 
 if menu == "선생님 입력용":
-    st.title("🎓 성적 입력 시스템")
+    st.title("🎓 성적 입력 시스템 (관리자)")
     if st.sidebar.text_input("비밀번호", type="password") == "1234":
         name = st.selectbox("👤 학생 선택", STUDENT_LIST)
         with st.form("input_form", clear_on_submit=True):
@@ -87,14 +88,12 @@ if menu == "선생님 입력용":
             g_p = st.selectbox("문법 수행도", ["-", "우수", "보통", "노력요함"])
 
             st.markdown("---")
-            st.subheader("✒️ 라이팅 (Writing)")
-            writing_feedback = st.text_area("영어홀릭 라이팅 피드백")
-
-            st.markdown("---")
-            comment = st.text_area("🌟 선생님 코멘트")
+            writing_feedback = st.text_area("✒️ 영어홀릭 라이팅 상세 피드백")
+            comment = st.text_area("🌟 선생님 종합 소견")
 
             if st.form_submit_button("평가서 저장하기"):
                 pw = STUDENT_INFO.get(name, "0000")
+                # A열부터 S열까지 순서
                 new_row = [str(date), name, level, hw, att, v_t, v_1, v_2, l_1, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
                 sheet.append_row(new_row)
                 st.success(f"🎉 {name}({level}) 저장 완료!")
@@ -134,18 +133,22 @@ elif menu == "학부모 조회용":
                         st.info(f"**📝 라이팅:** {row['영어홀릭 라이팅']}")
                         st.warning(f"📝 **종합 소견:** {row['코멘트']}")
                 
-                # --- 원장님 아이디 sue1984808 직접 연결 버튼 ---
+                # --- [절대 실패 없는 카톡 안내 섹션] ---
                 st.divider()
+                st.markdown("### 💬 원장님 1:1 상담 안내")
+                st.info("아래 버튼을 눌러 아이디를 복사한 후, 카카오톡 친구 추가에서 붙여넣어 주세요!")
+                
+                # 아이디 복사 버튼 디자인
+                kakao_id = "sue1984808"
+                if st.button(f"🟡 카톡 아이디 복사: {kakao_id}"):
+                    st.write(f"✅ 아이디 '{kakao_id}'가 복사 준비되었습니다. (드래그하여 복사해 주세요)")
+                
                 st.markdown(
                     f"""
-                    <a href="https://qr.kakao.com/talk/sue1984808" target="_blank" style="text-decoration: none;">
-                        <div style="display: flex; align-items: center; justify-content: center; background-color: #FEE500; color: #191919; padding: 12px 24px; border-radius: 12px; font-weight: bold; font-size: 16px;">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg" width="25" style="margin-right: 10px;">
-                            원장님과 1:1 상담하기
-                        </div>
-                    </a>
-                    """,
-                    unsafe_allow_html=True
+                    <div style="background-color: #FEE500; color: #191919; padding: 15px; border-radius: 10px; text-align: center; font-weight: bold;">
+                        아이디 검색: {kakao_id}
+                    </div>
+                    """, unsafe_allow_html=True
                 )
                 
             else: st.error("정보가 일치하지 않습니다.")
