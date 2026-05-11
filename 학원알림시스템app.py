@@ -4,43 +4,20 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# --- [1. 앱 설정 & 로고 강제 고정] ---
-# 아이폰과 카톡이 "완전 새 사이트"로 인식하도록 버전(v=45)을 높였습니다.
-SUE_LOGO_URL = "https://raw.githubusercontent.com/sue-reading/sue-report/main/S_Logo_transparent_v2.png?v=45"
+# --- [v5.0 최종 클린 버전] ---
+SUE_LOGO = "https://raw.githubusercontent.com/sue-reading/sue-report/main/S_Logo_transparent_v2.png?v=999"
 
-st.set_page_config(
-    page_title="쑤샘영어 스마트 리포트",
-    page_icon=SUE_LOGO_URL,
-    layout="wide"
-)
+st.set_page_config(page_title="쑤샘영어 리포트", page_icon=SUE_LOGO, layout="wide")
 
-# [필살기] 모든 SNS와 스마트폰이 스트림릿 로고를 잊게 만드는 강제 메타 태그
+# 아이폰/카톡/문자가 딴생각 못 하게 만드는 가장 표준적인 코드만 남깁니다.
 st.markdown(f"""
     <head>
-        <link rel="icon" href="{SUE_LOGO_URL}">
-        <link rel="apple-touch-icon" href="{SUE_LOGO_URL}">
-        <link rel="apple-touch-icon-precomposed" href="{SUE_LOGO_URL}">
-        
+        <link rel="apple-touch-icon" href="{SUE_LOGO}">
+        <link rel="icon" href="{SUE_LOGO}">
         <meta property="og:title" content="🎓 쑤샘영어 SMART REPORT">
-        <meta property="og:description" content="우리 아이 AI 스마트 평가 리포트">
-        <meta property="og:image" content="{SUE_LOGO_URL}">
-        <meta property="og:image:width" content="1200">
-        <meta property="og:image:height" content="630">
-        <meta property="og:type" content="website">
-        
+        <meta property="og:image" content="{SUE_LOGO}">
         <meta name="apple-mobile-web-app-title" content="쑤샘영어">
-        <meta name="apple-mobile-web-app-capable" content="yes">
     </head>
-    <style>
-        @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
-        * {{ font-family: 'Pretendard', sans-serif !important; }}
-        .main-header {{
-            background: linear-gradient(to right, #0f172a, #1e293b, #0f172a); 
-            padding: 30px; border-radius: 15px; border: 2px solid #38bdf8; 
-            text-align: center; box-shadow: 0px 4px 15px rgba(56, 189, 248, 0.3);
-            margin-bottom: 25px;
-        }}
-    </style>
     """, unsafe_allow_html=True)
 
 st.markdown("""
