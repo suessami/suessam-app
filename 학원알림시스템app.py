@@ -7,6 +7,29 @@ from oauth2client.service_account import ServiceAccountCredentials
 # --- [1. 앱 설정 & 디자인] ---
 st.set_page_config(page_title="쑤샘영어 스마트 리포트", page_icon="🎓", layout="wide")
 
+# 카톡 버튼을 노란색으로 만들기 위한 스타일 설정
+st.markdown("""
+    <style>
+    div.stLinkButton > a {
+        background-color: #FEE500 !important;
+        color: #191919 !important;
+        border: none !important;
+        padding: 15px 25px !important;
+        border-radius: 12px !important;
+        font-weight: bold !important;
+        font-size: 18px !important;
+        display: flex !important;
+        justify-content: center !important;
+        align-items: center !important;
+        width: 100% !important;
+    }
+    div.stLinkButton > a:hover {
+        background-color: #FDE500 !important;
+        color: #000000 !important;
+    }
+    </style>
+    """, unsafe_allow_html=True)
+
 st.markdown("""
     <div style="background: linear-gradient(to right, #0f172a, #1e293b, #0f172a); 
                 padding: 30px; border-radius: 15px; border: 2px solid #38bdf8; 
@@ -56,19 +79,18 @@ except Exception as e:
     st.error(f"연결 에러: {e}")
     connection_success = False
 
-# --- [4. 메뉴 구성] ---
 menu = st.sidebar.selectbox("메뉴 선택", ["학부모 조회용", "선생님 입력용"])
 
 # [A. 선생님 입력용]
 if menu == "선생님 입력용":
-    st.title("🎓 성적 입력 시스템")
+    st.title("🎓 성적 입력 시스템 (관리자)")
     if st.sidebar.text_input("비밀번호", type="password") == "1234":
         name = st.selectbox("👤 학생 선택", STUDENT_LIST)
         with st.form("input_form", clear_on_submit=True):
             date = st.date_input("📅 평가 날짜", datetime.now())
             level = st.radio("🏫 학교급", ["초등", "중등"], horizontal=True)
-            hw = st.radio("📚 과제", ["완료", "미흡", "미완료"], horizontal=True)
-            att = st.radio("✅ 출결", ["양호", "지각", "결석"], horizontal=True)
+            hw = st.radio("📚 과제 여부", ["완료", "미흡", "미완료"], horizontal=True)
+            att = st.radio("✅ 출결 상태", ["양호", "지각", "결석"], horizontal=True)
             
             st.markdown("### 📊 단어 & 듣기")
             v_t = st.number_input("단어 전체 문항", value=60)
@@ -77,27 +99,25 @@ if menu == "선생님 입력용":
             with c2: v_2 = st.number_input("단어 2차 맞은 개수", 0)
             l_1 = st.number_input("듣기 1차 점수", 0, 100)
 
-            st.markdown("### 📖 리딩 (Reading)")
+            st.markdown("---")
+            st.subheader("📖 리딩 (Reading)")
             r_con = st.text_input("리딩 수업 내용")
             r_p = st.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
             reading_voca = st.selectbox("📚 리딩 단어 암기", ["열심히 외움", "대충 외움", "공부한 노력이 보이지 않음"])
-            reading_sent = st.selectbox("✍️ 리딩 지문 영작/해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
+            reading_sent = st.selectbox("✍️ 리딩 문장 영작 및 해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
 
-            st.markdown("### 📝 문법 (Grammar)")
+            st.markdown("---")
+            st.subheader("📝 문법 (Grammar)")
             g_con = st.text_input("문법 수업 내용")
             g_p = st.selectbox("문법 수행도", ["-", "우수", "보통", "노력요함"])
 
-            st.markdown("### ✒️ 라이팅 & 코멘트")
-            writing_feedback = st.text_area("라이팅 상세 피드백")
-            comment = st.text_area("🌟 종합 소견")
+            st.markdown("---")
+            writing_feedback = st.text_area("✒️ 영어홀릭 라이팅 상세 피드백")
+            comment = st.text_area("🌟 선생님 종합 소견")
 
             if st.form_submit_button("평가서 저장하기"):
                 pw = STUDENT_INFO.get(name, "0000")
-                # A열~S열 순서 (총 19개 항목)
-                new_row = [
-                    str(date), name, level, hw, att, v_t, v_1, v_2, l_1, 0,
-                    r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw
-                ]
+                new_row = [str(date), name, level, hw, att, v_t, v_1, v_2, l_1, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
                 sheet.append_row(new_row)
                 st.success(f"🎉 {name}({level}) 저장 완료!")
 
@@ -125,19 +145,11 @@ elif menu == "학부모 조회용":
                         
                         v_total = int(row['단어 전체 문항']) if row['단어 전체 문항'] else 0
                         v_1 = int(row['단어 1차 맞은 개수']) if row['단어 1차 맞은 개수'] else 0
-                        v_2 = int(row['단어 2차 맞은 개수']) if row['단어 2차 맞은 개수'] else 0
-                        
-                        # 중등 100점 환산 로직
                         if row['구분'] == "중등" and v_total > 0:
                             v_score = round((v_1 / v_total) * 100)
-                            v_delta = f"{v_1}/{v_total}"
-                            if v_2 > 0: v_delta += f" (2차:{v_2})"
-                            col3.metric("단어 점수", f"{v_score}점", v_delta)
+                            col3.metric("단어 점수", f"{v_score}점", f"{v_1}/{v_total}")
                         else:
-                            v_val = f"{v_1}/{v_total}"
-                            if v_2 > 0: v_val += f" (2차:{v_2})"
-                            col3.metric("단어", v_val)
-                            
+                            col3.metric("단어", f"{v_1}/{v_total}")
                         col4.metric("듣기", f"{row['듣기 1차 점수']}점")
                         
                         st.markdown("---")
@@ -146,21 +158,11 @@ elif menu == "학부모 조회용":
                         st.info(f"**📝 라이팅 피드백:**\n\n{row['영어홀릭 라이팅']}")
                         st.warning(f"📝 **종합 소견:** {row['코멘트']}")
                 
-                # --- [사고모델 기반 최종 상담 버튼] ---
+                # --- [원장님과 1:1 상담하기 버튼 - 진짜 최종 솔루션] ---
                 st.divider()
-                st.markdown(
-                    f"""
-                    <a href="kakaotalk://friend/add/sue1984808" style="text-decoration: none;">
-                        <div style="display: flex; align-items: center; justify-content: center; background-color: #FEE500; color: #191919; padding: 15px; border-radius: 12px; font-weight: bold; font-size: 18px; box-shadow: 0px 4px 10px rgba(0,0,0,0.1);">
-                            <img src="https://upload.wikimedia.org/wikipedia/commons/e/e3/KakaoTalk_logo.svg" width="25" style="margin-right: 12px;">
-                            원장님과 1:1 상담하기
-                        </div>
-                    </a>
-                    <p style="text-align:center; font-size: 12px; color: #666; margin-top: 10px;">
-                        * 모바일에서 클릭 시 원장님 프로필로 즉시 연결됩니다.
-                    </p>
-                    """, unsafe_allow_html=True
-                )
+                # st.link_button은 클릭이 절대 차단되지 않습니다.
+                # PC에서는 에러가 날 수 있으나, 모바일에서는 카카오톡이 정상적으로 열립니다.
+                st.link_button("💬 원장님과 1:1 상담하기", "https://qr.kakao.com/talk/sue1984808")
                 
             else: st.error("정보가 일치하지 않습니다.")
         except Exception as e: 
