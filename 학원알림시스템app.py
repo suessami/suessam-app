@@ -7,23 +7,6 @@ from oauth2client.service_account import ServiceAccountCredentials
 # --- [1. 앱 설정 & 디자인] ---
 st.set_page_config(page_title="쑤샘영어 스마트 리포트", page_icon="🎓", layout="wide")
 
-# 카톡 노란색 버튼 스타일 적용 (안정성을 위해 공식 버튼에 스타일만 입힘)
-st.markdown("""
-    <style>
-    div.stLinkButton > a {
-        background-color: #FEE500 !important;
-        color: #191919 !important;
-        border: none !important;
-        padding: 12px 20px !important;
-        border-radius: 12px !important;
-        font-weight: bold !important;
-        width: 100% !important;
-        display: flex !important;
-        justify-content: center !important;
-    }
-    </style>
-    """, unsafe_allow_html=True)
-
 st.markdown("""
     <div style="background: linear-gradient(to right, #0f172a, #1e293b, #0f172a); 
                 padding: 30px; border-radius: 15px; border: 2px solid #38bdf8; 
@@ -78,7 +61,7 @@ menu = st.sidebar.selectbox("메뉴 선택", ["학부모 조회용", "선생님 
 # [A. 선생님 입력용]
 if menu == "선생님 입력용":
     st.title("🎓 성적 입력 시스템 (관리자)")
-    if st.sidebar.text_input("비밀번호", type="password") == "1234":
+    if st.sidebar.text_input("관리자 비밀번호", type="password") == "1234":
         name = st.selectbox("👤 학생 선택", STUDENT_LIST)
         with st.form("input_form", clear_on_submit=True):
             date = st.date_input("📅 평가 날짜", datetime.now())
@@ -87,17 +70,18 @@ if menu == "선생님 입력용":
             att = st.radio("✅ 출결 상태", ["양호", "지각", "결석"], horizontal=True)
             
             st.markdown("### 📊 단어 & 듣기")
-            v_total = st.number_input("단어 전체 문항", value=60)
+            v_t = st.number_input("단어 전체 문항", value=60)
             col1, col2 = st.columns(2)
-            with col1: v1 = st.number_input("단어 1차 맞은 개수", 0)
-            with col2: v2 = st.number_input("단어 2차 맞은 개수", 0)
-            l1 = st.number_input("듣기 점수", 0, 100)
+            with col1: v_1 = st.number_input("단어 1차 맞은 개수", 0)
+            with col2: v_2 = st.number_input("단어 2차 맞은 개수", 0)
+            l_1 = st.number_input("듣기 점수", 0, 100)
 
-            st.markdown("### 📖 수업 상세 평가")
+            st.markdown("---")
+            st.subheader("📖 수업 상세 평가")
             r_con = st.text_input("리딩 수업 내용")
             r_p = st.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
             reading_voca = st.selectbox("📚 리딩 단어 암기", ["열심히 외움", "대충 외움", "공부한 노력이 보이지 않음"])
-            reading_sent = st.selectbox("✍️ 리딩 지문 영작/해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
+            reading_sent = st.selectbox("✍️ 리딩 문장 영작/해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
             
             g_con = st.text_input("문법 수업 내용")
             g_p = st.selectbox("문법 수행도", ["-", "우수", "보통", "노력요함"])
@@ -108,7 +92,7 @@ if menu == "선생님 입력용":
             if st.form_submit_button("평가서 저장하기"):
                 pw = STUDENT_INFO.get(name, "0000")
                 # A~S열 순서 (총 19개)
-                new_row = [str(date), name, level, hw, att, v_total, v1, v2, l1, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
+                new_row = [str(date), name, level, hw, att, v_t, v_1, v_2, l_1, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
                 sheet.append_row(new_row)
                 st.success(f"🎉 {name}({level}) 리포트가 안전하게 저장되었습니다!")
 
@@ -133,13 +117,19 @@ elif menu == "학부모 조회용":
                         m1.metric("과제", row['과제 여부'])
                         m2.metric("출결", row['출결'])
                         
-                        # 단어 점수 로직 (중등 100점 환산)
                         vt = int(row['단어 전체 문항']) if row['단어 전체 문항'] else 0
                         v1 = int(row['단어 1차 맞은 개수']) if row['단어 1차 맞은 개수'] else 0
+                        v2 = int(row['단어 2차 맞은 개수']) if row['단어 2차 맞은 개수'] else 0
+                        
                         if row['구분'] == "중등" and vt > 0:
-                            m3.metric("단어 점수", f"{round((v1/vt)*100)}점", f"{v1}/{vt}")
+                            score = round((v1/vt)*100)
+                            v_delta = f"{v1}/{vt}"
+                            if v2 > 0: v_delta += f" (2차:{v2})"
+                            m3.metric("단어 점수", f"{score}점", v_delta)
                         else:
-                            m3.metric("단어", f"{v1}/{vt}")
+                            v_val = f"{v1}/{vt}"
+                            if v2 > 0: v_val += f" (2차:{v2})"
+                            m3.metric("단어", v_val)
                         m4.metric("듣기", f"{row['듣기 1차 점수']}점")
                         
                         st.markdown("---")
@@ -148,10 +138,9 @@ elif menu == "학부모 조회용":
                         st.info(f"**📝 라이팅 피드백:**\n\n{row['영어홀릭 라이팅']}")
                         st.warning(f"📝 **종합 소견:** {row['코멘트']}")
                 
-                # --- [원장님표 다정한 상담 버튼] ---
+                # --- [원장님표 다정한 안내 문구로 교체] ---
                 st.divider()
-                # 💬 이모지를 넣고 문구를 다정하게 수정했습니다.
-                st.link_button("💬 리포트 보시고 궁금한 점은 카톡으로 말씀해 주세요", "https://qr.kakao.com/talk/sue1984808")
+                st.success("💬 리포트 내용에 대해 궁금하신 점은 평소처럼 **카카오톡**으로 편하게 말씀해 주세요! 원장님이 확인 후 답변 드리겠습니다. 😊")
                 
             else: st.error("정보가 일치하지 않습니다.")
         except Exception as e: 
