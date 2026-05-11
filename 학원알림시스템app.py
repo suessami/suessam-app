@@ -98,7 +98,7 @@ if menu == "선생님 입력용":
             writing_feedback = st.text_area("라이팅 피드백")
 
             st.markdown("---")
-            comment = st.text_area("🌟 선생님 종합 소견")
+            comment = st.text_area("🌟 오늘의 수업")
 
             if st.form_submit_button("리포트 저장하기"):
                 l_desc = ""
