@@ -5,22 +5,21 @@ import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
 # --- [1. 앱 설정 & 디자인] ---
-st.set_page_config(page_title="쑤샘영어 스마트 리포트", page_icon="🎓", layout="wide")
+# 깃허브에 올리신 로고 파일명과 똑같이 써주세요!
+SUE_LOGO = "S_Logo_transparent_v2.png"
 
-st.markdown("""
-    <div style="background: linear-gradient(to right, #0f172a, #1e293b, #0f172a); 
-                padding: 30px; border-radius: 15px; border: 2px solid #38bdf8; 
-                text-align: center; box-shadow: 0px 4px 15px rgba(56, 189, 248, 0.3);">
-        <h1 style="color: #facc15; margin-bottom: 5px; font-family: 'Pretendard', sans-serif;">
-            🎓 쑤샘영어 SMART REPORT
-        </h1>
-        <p style="color: #38bdf8; font-size: 1.2rem; margin-top: 0;">
-            SUE ENGLISH INNOVATION SYSTEM
-        </p>
-        <div style="background-color: rgba(56, 189, 248, 0.1); padding: 10px; border-radius: 10px; color: white;">
-            혁신적인 우리 아이 AI 스마트 평가 리포트
-        </div>
-    </div>
+st.set_page_config(
+    page_title="쑤샘영어 스마트 리포트",
+    page_icon=SUE_LOGO, # 브라우저 탭 아이콘을 우리 로고로!
+    layout="wide"
+)
+
+# [버전 3.0] 모바일 홈 화면에서 노션 로고 대신 '진짜 앱'처럼 보이게 하는 설정
+st.markdown(f"""
+    <link rel="apple-touch-icon" href="{SUE_LOGO}">
+    <link rel="icon" href="{SUE_LOGO}">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="쑤샘영어">
     """, unsafe_allow_html=True)
 st.write("") 
 
