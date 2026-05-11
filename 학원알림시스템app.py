@@ -4,7 +4,7 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# --- [1. 앱 설정 & 디지털 대문 디자인] ---
+# --- [1. 앱 설정 & 디자인] ---
 st.set_page_config(page_title="쑤샘영어 스마트 리포트", page_icon="🎓", layout="wide")
 
 st.markdown("""
@@ -76,22 +76,22 @@ if menu == "선생님 입력용":
             with col_v1:
                 v_t = st.number_input("단어 전체 문항", value=60, min_value=0)
             with col_v2:
-                v_1 = st.number_input("단어 맞은 개수", value=0, min_value=0)
-            l_1 = st.number_input("듣기 점수", 0, 100)
+                v_1 = st.number_input("단어 1차 맞은 개수", value=0, min_value=0)
+            l_1 = st.number_input("듣기 1차 점수", 0, 100)
 
             # 2. 리딩 섹션
             st.markdown("---")
             st.subheader("📖 리딩 (Reading)")
             r_con = st.text_input("리딩 수업 내용")
-            r_p = st.selectbox("리딩 수업 수행도", ["-", "우수", "보통", "노력요함"])
+            r_p = st.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
             reading_voca = st.selectbox("📚 리딩 단어 암기", ["열심히 외움", "대충 외움", "공부한 노력이 보이지 않음"])
-            reading_sent = st.selectbox("✍️ 리딩 문장 영작 및 해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
+            reading_sent = st.selectbox("✍️ 리딩 지문 영작 및 해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
 
             # 3. 문법 섹션
             st.markdown("---")
             st.subheader("📝 문법 (Grammar)")
             g_con = st.text_input("문법 수업 내용")
-            g_p = st.selectbox("문법 수업 수행도", ["-", "우수", "보통", "노력요함"])
+            g_p = st.selectbox("문법 수행도", ["-", "우수", "보통", "노력요함"])
 
             # 4. 라이팅 섹션
             st.markdown("---")
@@ -104,15 +104,35 @@ if menu == "선생님 입력용":
 
             if st.form_submit_button("평가서 저장하기"):
                 pw = STUDENT_INFO.get(name, "0000")
-                # 시트 저장 순서: 날짜, 이름, 구분, 과제, 출결, 단어전체, 단어맞은것, 0, 0, 듣기, 리딩내용, 리딩수행, 문법내용, 문법수행, 리딩단어, 리딩문장, 라이팅, 코멘트, 비번
-                new_row = [str(date), name, "일반", hw, att, v_t, v_1, 0, 0, l_1, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
+                # A열부터 S열까지 순서 (총 19개)
+                new_row = [
+                    str(date),          # A: 평가 날짜
+                    name,               # B: 학생 이름
+                    "일반",             # C: 구분
+                    hw,                 # D: 과제 여부
+                    att,                # E: 출결
+                    v_t,                # F: 단어 전체 문항
+                    v_1,                # G: 단어 1차 맞은 개수
+                    0,                  # H: 단어 2차 맞은 개수 (0)
+                    l_1,                # I: 듣기 1차 점수
+                    0,                  # J: 듣기 2차 점수 (0)
+                    r_con,              # K: 리딩 수업 내용
+                    r_p,                # L: 리딩 수행도
+                    g_con,              # M: 문법 수업 내용
+                    g_p,                # N: 문법 수행도
+                    reading_voca,       # O: 리딩 단어
+                    reading_sent,       # P: 리딩 지문 영작 및 해석
+                    writing_feedback,   # Q: 영어홀릭 라이팅
+                    comment,            # R: 코멘트
+                    pw                  # S: 비밀번호
+                ]
                 sheet.append_row(new_row)
-                st.success(f"🎉 {name} 학생의 리포트가 성공적으로 저장되었습니다!")
+                st.success(f"🎉 {name} 학생 리포트 저장 완료! (A~S열)")
 
 # [B. 학부모 조회용]
 elif menu == "학부모 조회용":
     st.title("🔍 쑤샘영어 우리 아이 리포트 조회")
-    st.info("아이 이름과 등록된 비밀번호(어머니 핸드폰 뒷자리)를 입력해 주세요.")
+    st.info("아이 이름과 등록된 비밀번호를 입력해 주세요.")
     c1, c2 = st.columns(2)
     with c1: name_in = st.text_input("👤 학생 이름")
     with c2: pw_in = st.text_input("🔑 비밀번호", type="password")
@@ -121,7 +141,9 @@ elif menu == "학부모 조회용":
         try:
             all_v = sheet.get_all_values()
             df = pd.DataFrame(all_v[1:], columns=all_v[0])
-            res = df[(df['학생 이름'] == name_in) & (df['비밀번호'].astype(str) == str(pw_in))]
+            # 이름과 비밀번호(문자열 처리) 비교
+            res = df[(df['학생 이름'] == name_in) & (df['비밀번호'].astype(str).str.strip() == str(pw_in).strip())]
+            
             if not res.empty:
                 st.success(f"✅ {name_in} 학생의 리포트입니다.")
                 for _, row in res.iloc[::-1].iterrows():
@@ -135,19 +157,19 @@ elif menu == "학부모 조회용":
                         
                         st.markdown("---")
                         st.markdown("#### 📖 성취도 상세")
-                        st.write(f"**📚 리딩 단어:** {row['리딩 단어']}")
-                        st.write(f"**✍️ 리딩 문장:** {row['리딩 문장']}")
-                        st.info(f"**📝 라이팅 피드백:**\n\n{row['영어홀릭 라이팅']}")
+                        st.write(f"**📚 리딩 단어 암기:** {row['리딩 단어']}")
+                        st.write(f"**✍️ 리딩 지문 영작 및 해석:** {row['리딩 지문 영작 및 해석']}")
+                        st.info(f"**📝 영어홀릭 라이팅:**\n\n{row['영어홀릭 라이팅']}")
                         
                         st.markdown("---")
                         st.markdown("#### 📚 수업 내용")
                         if row['리딩 수업 내용']: st.write(f"**리딩:** {row['리딩 수업 내용']} ({row['리딩 수행도']})")
                         if row['문법 수업 내용']: st.write(f"**문법:** {row['문법 수업 내용']} ({row['문법 수행도']})")
                         st.warning(f"📝 **종합 소견:** {row['코멘트']}")
-                        
+                
                 st.divider()
-                st.link_button("💬 원장님과 1:1 상담하기", "https://pf.kakao.com/_xxxxxx") # 실제 링크로 교체하세요!
+                st.link_button("💬 원장님과 1:1 상담하기", "https://pf.kakao.com/_xxxxxx") # 카톡 링크를 넣어주세요
                 
             else: st.error("정보가 일치하지 않습니다.")
         except Exception as e: 
-            st.error(f"조회 중 오류가 발생했습니다: {e}")
+            st.error(f"조회 중 오류가 발생했습니다. (시트 열 제목 확인 필요)")
