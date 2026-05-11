@@ -66,29 +66,48 @@ if menu == "선생님 입력용":
         name = st.selectbox("👤 학생 선택", STUDENT_LIST)
         with st.form("input_form", clear_on_submit=True):
             date = st.date_input("📅 평가 날짜", datetime.now())
-            hw = st.radio("📚 과제", ["완료", "미흡", "미완료"], horizontal=True)
-            att = st.radio("✅ 출결", ["양호", "지각", "결석"], horizontal=True)
-            v_t = st.number_input("단어 전체", value=60, min_value=0)
-            v_1 = st.number_input("단어 맞은 개수", 0)
+            hw = st.radio("📚 과제 여부", ["완료", "미흡", "미완료"], horizontal=True)
+            att = st.radio("✅ 출결 상태", ["양호", "지각", "결석"], horizontal=True)
             
+            # 1. 단어 및 듣기 섹션
             st.markdown("---")
-            st.markdown("#### 📖 리딩 & 라이팅 상세 평가")
-            reading_voca = st.selectbox("📚 리딩 단어", ["열심히 외움", "대충 외움", "공부한 노력이 보이지 않음"])
-            reading_sent = st.selectbox("✍️ 리딩 지문 영작 및 해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
-            writing_feedback = st.text_area("📝 영어홀릭 라이팅")
-            
-            st.markdown("---")
+            st.markdown("### 📊 단어 & 듣기")
+            col_v1, col_v2 = st.columns(2)
+            with col_v1:
+                v_t = st.number_input("단어 전체 문항", value=60, min_value=0)
+            with col_v2:
+                v_1 = st.number_input("단어 맞은 개수", value=0, min_value=0)
             l_1 = st.number_input("듣기 점수", 0, 100)
-            r_con = st.text_input("리딩 수업 내용"); r_p = st.selectbox("리딩 수행도", ["-", "우수", "보통", "노력요함"])
-            g_con = st.text_input("문법 수업 내용"); g_p = st.selectbox("문법 수행도", ["-", "우수", "보통", "노력요함"])
-            comment = st.text_area("종합 선생님 코멘트")
-            
+
+            # 2. 리딩 섹션
+            st.markdown("---")
+            st.subheader("📖 리딩 (Reading)")
+            r_con = st.text_input("리딩 수업 내용")
+            r_p = st.selectbox("리딩 수업 수행도", ["-", "우수", "보통", "노력요함"])
+            reading_voca = st.selectbox("📚 리딩 단어 암기", ["열심히 외움", "대충 외움", "공부한 노력이 보이지 않음"])
+            reading_sent = st.selectbox("✍️ 리딩 문장 영작 및 해석", ["열심히 공부했음", "조금 더 공부하기", "공부한 노력이 보이지 않음"])
+
+            # 3. 문법 섹션
+            st.markdown("---")
+            st.subheader("📝 문법 (Grammar)")
+            g_con = st.text_input("문법 수업 내용")
+            g_p = st.selectbox("문법 수업 수행도", ["-", "우수", "보통", "노력요함"])
+
+            # 4. 라이팅 섹션
+            st.markdown("---")
+            st.subheader("✒️ 라이팅 (Writing)")
+            writing_feedback = st.text_area("영어홀릭 라이팅 상세 피드백")
+
+            # 5. 종합 의견
+            st.markdown("---")
+            comment = st.text_area("🌟 선생님 종합 소견")
+
             if st.form_submit_button("평가서 저장하기"):
                 pw = STUDENT_INFO.get(name, "0000")
-                # pw를 그대로 저장 (앞서 합의한 대로 '없이 숫자만)
-                new_row = [str(date), name, "구분", hw, att, v_t, v_1, 0, 0, l_1, comment, reading_voca, reading_sent, writing_feedback, pw]
+                # 시트 저장 순서: 날짜, 이름, 구분, 과제, 출결, 단어전체, 단어맞은것, 0, 0, 듣기, 리딩내용, 리딩수행, 문법내용, 문법수행, 리딩단어, 리딩문장, 라이팅, 코멘트, 비번
+                new_row = [str(date), name, "일반", hw, att, v_t, v_1, 0, 0, l_1, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
                 sheet.append_row(new_row)
-                st.success(f"🎉 {name} 저장 완료! (비번: {pw})")
+                st.success(f"🎉 {name} 학생의 리포트가 성공적으로 저장되었습니다!")
 
 # [B. 학부모 조회용]
 elif menu == "학부모 조회용":
@@ -115,20 +134,19 @@ elif menu == "학부모 조회용":
                         col4.metric("듣기", f"{row['듣기 1차 점수']}점")
                         
                         st.markdown("---")
-                        st.markdown("#### 📖 상세 성취도")
+                        st.markdown("#### 📖 성취도 상세")
                         st.write(f"**📚 리딩 단어:** {row['리딩 단어']}")
-                        st.write(f"**✍️ 리딩 지문 영작 및 해석:** {row['리딩 지문 영작 및 해석']}")
-                        st.info(f"**📝 영어홀릭 라이팅:**\n\n{row['영어홀릭 라이팅']}")
+                        st.write(f"**✍️ 리딩 문장:** {row['리딩 문장']}")
+                        st.info(f"**📝 라이팅 피드백:**\n\n{row['영어홀릭 라이팅']}")
                         
                         st.markdown("---")
                         st.markdown("#### 📚 수업 내용")
-                        if row['리딩 수업 내용']: st.write(f"**리딩 수업:** {row['리딩 수업 내용']} ({row['리딩 수행도']})")
-                        if row['문법 수업 내용']: st.write(f"**문법 수업:** {row['문법 수업 내용']} ({row['문법 수행도']})")
+                        if row['리딩 수업 내용']: st.write(f"**리딩:** {row['리딩 수업 내용']} ({row['리딩 수행도']})")
+                        if row['문법 수업 내용']: st.write(f"**문법:** {row['문법 수업 내용']} ({row['문법 수행도']})")
                         st.warning(f"📝 **종합 소견:** {row['코멘트']}")
                         
-                # --- 카톡 상담 버튼 추가 ---
                 st.divider()
-                st.link_button("💬 원장님과 1:1 상담하기", "https://pf.kakao.com/_xxxxxx") # 여기에 원장님 카톡 링크 넣어주세요!
+                st.link_button("💬 원장님과 1:1 상담하기", "https://pf.kakao.com/_xxxxxx") # 실제 링크로 교체하세요!
                 
             else: st.error("정보가 일치하지 않습니다.")
         except Exception as e: 
