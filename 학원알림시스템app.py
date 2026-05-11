@@ -4,37 +4,42 @@ from datetime import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 
-# --- [1. 앱 설정 & 디자인] ---
-# 아이폰이 가장 잘 인식하는 '직접 이미지 링크'입니다.
-# (원장님이 깃허브에 올리신 파일의 Raw 주소를 제가 미리 가공해 두었습니다)
-SUE_LOGO_URL = "https://raw.githubusercontent.com/sue-reading/sue-report/main/S_Logo_transparent_v2.png"
+# --- [1. 앱 설정 & 브랜드 아이콘] ---
+# 아이폰과 카톡/문자 미리보기에서 스트림릿 로고를 밀어내기 위한 강력한 설정입니다.
+SUE_LOGO_URL = "https://raw.githubusercontent.com/sue-reading/sue-report/main/S_Logo_transparent_v2.png?v=38"
 
 st.set_page_config(
     page_title="쑤샘영어 스마트 리포트",
-    page_icon=SUE_LOGO_URL, 
+    page_icon=SUE_LOGO_URL,
     layout="wide"
 )
 
-# 아이폰 '홈 화면에 추가' 시 노션을 밀어내고 우리 로고를 강제 적용하는 코드
+# [디자인 필살기] 모든 기기에서 '쑤샘영어' 전용 앱처럼 보이게 하는 설정
 st.markdown(f"""
-    <link rel="apple-touch-icon" href="{SUE_LOGO_URL}">
-    <link rel="icon" href="{SUE_LOGO_URL}">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="쑤샘영어">
+    <head>
+        <link rel="apple-touch-icon" href="{SUE_LOGO_URL}">
+        <link rel="apple-touch-icon-precomposed" href="{SUE_LOGO_URL}">
+        <link rel="icon" href="{SUE_LOGO_URL}">
+        <meta property="og:title" content="🎓 쑤샘영어 스마트 리포트">
+        <meta property="og:description" content="우리 아이의 혁신적인 실력 향상 데이터를 확인하세요.">
+        <meta property="og:image" content="{SUE_LOGO_URL}">
+        <meta property="og:type" content="website">
+        <meta name="apple-mobile-web-app-title" content="쑤샘영어">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <style>
+            @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+            * {{ font-family: 'Pretendard', -apple-system, sans-serif !important; }}
+        </style>
+    </head>
     """, unsafe_allow_html=True)
 
-# ... (이하 기존 코드 동일)
+# 메인 헤더 디자인
 st.markdown("""
     <div style="background: linear-gradient(to right, #0f172a, #1e293b, #0f172a); 
                 padding: 30px; border-radius: 15px; border: 2px solid #38bdf8; 
                 text-align: center; box-shadow: 0px 4px 15px rgba(56, 189, 248, 0.3);">
-        <h1 style="color: #facc15; margin-bottom: 5px;">
-            🎓 쑤샘영어 SMART REPORT
-        </h1>
-        <p style="color: #38bdf8; font-size: 1.2rem; margin-top: 0;">
-            SUE ENGLISH INNOVATION SYSTEM
-        </p>
+        <h1 style="color: #facc15; margin-bottom: 5px;">🎓 쑤샘영어 SMART REPORT</h1>
+        <p style="color: #38bdf8; font-size: 1.2rem; margin-top: 0;">SUE ENGLISH INNOVATION SYSTEM</p>
         <div style="background-color: rgba(56, 189, 248, 0.1); padding: 10px; border-radius: 10px; color: white;">
             혁신적인 우리 아이 AI 스마트 평가 리포트
         </div>
@@ -42,7 +47,7 @@ st.markdown("""
     """, unsafe_allow_html=True)
 st.write("") 
 
-# --- [2. 학생 정보 & 비밀번호 DB] ---
+# --- [2. 학생 정보 & 비밀번호 데이터] ---
 STUDENT_INFO = {
     "권도해": "7236", "이재민": "2052", "송연주": "8526", "이다원": "6765", "송하준": "1703",
     "허민우": "7007", "이소미": "5520", "경지윤": "6671", "정주안": "0321", "천준영": "3837",
@@ -53,8 +58,7 @@ STUDENT_INFO = {
 }
 STUDENT_LIST = sorted(list(STUDENT_INFO.keys()))
 
-# --- [3. 구글 시트 연결] ---
-# (원장님 코드와 동일하므로 연결 로직 유지)
+# --- [3. 구글 시트 보안 연결] ---
 scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
 try:
     creds_data = st.secrets["gcp_service_account"]
@@ -72,14 +76,14 @@ try:
     sheet = client.open_by_key("1cI7yQIne4ZWdICRhVoqw18P16ZN81kT5LOnDN1ipfhE").sheet1
     connection_success = True
 except Exception as e:
-    st.error(f"연결 에러: {e}")
+    st.error(f"시트 연결 중 에러가 발생했습니다: {e}")
     connection_success = False
 
 menu = st.sidebar.selectbox("메뉴 선택", ["학부모 조회용", "선생님 입력용"])
 
 # [A. 선생님 입력용]
 if menu == "선생님 입력용":
-    st.title("🎓 성적 입력 시스템 (관리자)")
+    st.title("🎓 성적 입력 시스템")
     if st.sidebar.text_input("관리자 비밀번호", type="password") == "1234":
         name = st.selectbox("👤 학생 선택", STUDENT_LIST)
         with st.form("input_form", clear_on_submit=True):
@@ -90,9 +94,9 @@ if menu == "선생님 입력용":
             
             st.markdown("### 📊 단어 & 듣기")
             v_t = st.number_input("단어 전체 문항", value=60)
-            col1, col2 = st.columns(2)
-            with col1: v_1 = st.number_input("단어 1차 맞은 개수", 0)
-            with col2: v_2 = st.number_input("단어 2차 맞은 개수", 0)
+            c1, c2 = st.columns(2)
+            with c1: v_1 = st.number_input("단어 1차 맞은 개수", 0)
+            with c2: v_2 = st.number_input("단어 2차 맞은 개수", 0)
             l_1 = st.number_input("듣기 점수", 0, 100)
 
             st.markdown("---")
@@ -112,14 +116,14 @@ if menu == "선생님 입력용":
                 pw = STUDENT_INFO.get(name, "0000")
                 new_row = [str(date), name, level, hw, att, v_t, v_1, v_2, l_1, 0, r_con, r_p, g_con, g_p, reading_voca, reading_sent, writing_feedback, comment, pw]
                 sheet.append_row(new_row)
-                st.success(f"🎉 {name}({level}) 리포트 저장 완료!")
+                st.success(f"🎉 {name}({level}) 리포트가 성공적으로 저장되었습니다!")
 
 # [B. 학부모 조회용]
 elif menu == "학부모 조회용":
-    st.title("🔍 쑤샘영어 우리 아이 리포트 조회")
-    c1, c2 = st.columns(2)
-    with c1: name_in = st.text_input("👤 학생 이름")
-    with c2: pw_in = st.text_input("🔑 비밀번호", type="password")
+    st.title("🔍 우리 아이 리포트 조회")
+    col_a, col_b = st.columns(2)
+    with col_a: name_in = st.text_input("👤 학생 이름")
+    with col_b: pw_in = st.text_input("🔑 비밀번호", type="password")
     
     if name_in and pw_in and connection_success:
         try:
@@ -129,7 +133,7 @@ elif menu == "학부모 조회용":
             
             if not res.empty:
                 for _, row in res.iloc[::-1].iterrows():
-                    with st.expander(f"📅 {row['평가 날짜']} 리포트 확인"):
+                    with st.expander(f"📅 {row['평가 날짜']} 리포트 확인하기"):
                         st.markdown("#### 📊 학습 현황")
                         m1, m2, m3, m4 = st.columns(4)
                         m1.metric("과제", row['과제 여부'])
@@ -141,13 +145,9 @@ elif menu == "학부모 조회용":
                         
                         if row['구분'] == "중등" and vt > 0:
                             score = round((v1/vt)*100)
-                            v_delta = f"{v1}/{vt}"
-                            if v2 > 0: v_delta += f" (2차:{v2})"
-                            m3.metric("단어 점수", f"{score}점", v_delta)
+                            m3.metric("단어 점수", f"{score}점", f"{v1}/{vt} (2차:{v2})" if v2 > 0 else f"{v1}/{vt}")
                         else:
-                            v_val = f"{v1}/{vt}"
-                            if v2 > 0: v_val += f" (2차:{v2})"
-                            m3.metric("단어", v_val)
+                            m3.metric("단어", f"{v1}/{vt} (2차:{v2})" if v2 > 0 else f"{v1}/{vt}")
                         m4.metric("듣기", f"{row['듣기 1차 점수']}점")
                         
                         st.markdown("---")
@@ -156,7 +156,7 @@ elif menu == "학부모 조회용":
                         st.info(f"**📝 라이팅 피드백:**\n\n{row['영어홀릭 라이팅']}")
                         st.warning(f"📝 **종합 소견:** {row['코멘트']}")
                 
-                # --- [카톡 스타일 노란색 안내 박스] ---
+                # --- [카톡 스타일 하단 안내 박스] ---
                 st.divider()
                 st.markdown(
                     f"""
@@ -172,7 +172,6 @@ elif menu == "학부모 조회용":
                     """, 
                     unsafe_allow_html=True
                 )
-                
-            else: st.error("정보가 일치하지 않습니다.")
+            else: st.error("이름 또는 비밀번호가 일치하지 않습니다.")
         except Exception as e: 
-            st.error(f"오류가 발생했습니다: {e}")
+            st.error(f"데이터를 불러오는 중 오류가 발생했습니다: {e}")
