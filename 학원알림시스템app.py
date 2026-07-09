@@ -21,7 +21,7 @@ st.write("")
 
 # --- [2. 학생 정보 DB] ---
 STUDENT_INFO = {
-    "권도해": "7236", "이재MIN": "2052", "송연주": "8526", "이다원": "6765", "송하준": "1703",
+    "권도해": "7236", "이재민": "2052", "송연주": "8526", "이다원": "6765", "송하준": "1703",
     "허민우": "7007", "이소미": "5520", "경지윤": "6671", "정주안": "0321", "천준영": "3837",
     "하윤성": "2256", "권담": "4767", "이태은": "4848", "박시윤": "0354", "송서윤": "0548",
     "김유주": "3698", "손다희": "7713", "김세영": "9106", "김민승": "4227", "유지아": "0975",
@@ -120,10 +120,13 @@ elif menu == "학부모 조회용":
     if n_in and p_in and connection_success:
         try:
             all_v = sheet.get_all_values()
-            df = pd.DataFrame(all_v[1:], columns=all_v[0])
             
-            # ⭐ [해결 포인트] 제목 줄(컬럼명)의 눈에 안 보이는 앞뒤 공백을 강제로 지워버립니다.
-            df.columns = df.columns.str.strip()
+            # ⭐ [핵심 방탄 로직] 시트 제목 행을 가져와 앞뒤 공백을 자르고, 2번째 컬럼을 '학생 이름'으로 강제 고정!
+            headers = [h.strip() for h in all_v[0]]
+            if len(headers) > 1:
+                headers[1] = '학생 이름'
+                
+            df = pd.DataFrame(all_v[1:], columns=headers)
             
             res = df[(df['학생 이름'].astype(str).str.strip() == str(n_in).strip()) & (df['비밀번호'].astype(str).str.strip() == str(p_in).strip())]
             
