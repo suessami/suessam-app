@@ -21,12 +21,12 @@ st.write("")
 
 # --- [2. 학생 정보 DB] ---
 STUDENT_INFO = {
-    "권도해": "7236", "이재민": "2052", "송연주": "8526", "이다원": "6765", "송하준": "1703",
+    "권도해": "7236", "이재MIN": "2052", "송연주": "8526", "이다원": "6765", "송하준": "1703",
     "허민우": "7007", "이소미": "5520", "경지윤": "6671", "정주안": "0321", "천준영": "3837",
-    "하윤성": "2256", "권담": "4767", "이태은": "4848", "송서윤": "0548",
+    "하윤성": "2256", "권담": "4767", "이태은": "4848", "박시윤": "0354", "송서윤": "0548",
     "김유주": "3698", "손다희": "7713", "김세영": "9106", "김민승": "4227", "유지아": "0975",
-    "조성준": "0405", "김하람": "4551", "박유찬": "9987", "진시우": "5008", "이주빈": "6765",
-    "이진서": "1696", "최연아": "8550", "박기범": "8390", "김건희": "9345", "김규리": "9345", "쑤새미": "9603", "윤채원": "1546"
+    "조성준": "0405", "김하람": "4551", "최승아": "3857", "진시우": "5008", "이주빈": "6765",
+    "이진서": "1696", "최연아": "8550", "박기범": "8390", "김건희": "9345", "김규리": "9345", "쑤새미": "9603"
 }
 STUDENT_LIST = sorted(list(STUDENT_INFO.keys()))
 
@@ -69,9 +69,8 @@ if menu == "선생님 입력용":
             v_t = st.number_input("단어 전체 문항", value=60)
             c1, c2 = st.columns(2)
             with c1: v_1 = st.number_input("단어 1차 맞은 개수", 0)
-            with col2 if 'col2' in locals() else c2: v_2 = st.number_input("단어 2차 맞은 개수", 0)
+            with c2: v_2 = st.number_input("단어 2차 맞은 개수", 0)
             
-            # 듣기 입력 분기
             if level == "중등":
                 lc1, lc2 = st.columns(2)
                 with lc1: l_total = st.number_input("듣기 전체 문항", value=20)
@@ -95,16 +94,16 @@ if menu == "선생님 입력용":
 
             st.markdown("---")
             st.markdown("### ✒️ 영어홀릭 라이팅")
-            writing_feedback = st.text_area("라이팅 피드백")
+            writing_feedback = st.text_area("상세 피드백")
 
             st.markdown("---")
-            comment = st.text_area("🌟 오늘의 수업")
+            comment = st.text_area("🌟 선생님 종합 소견")
 
             if st.form_submit_button("리포트 저장하기"):
                 l_desc = ""
                 if level == "중등" and l_total > 0:
                     l_score = round((l_correct / l_total) * 100)
-                    l_desc = f"{l_correct}/{l_total}" # 중등만 상세 정보 저장
+                    l_desc = f"{l_correct}/{l_total}"
                 
                 pw = STUDENT_INFO.get(name, "0000")
                 new_row = [str(date), name, level, hw, att, v_t, v_1, v_2, l_score, l_desc, r_con, r_p, g_con, g_p, rv, rs, writing_feedback, comment, pw]
@@ -122,7 +121,11 @@ elif menu == "학부모 조회용":
         try:
             all_v = sheet.get_all_values()
             df = pd.DataFrame(all_v[1:], columns=all_v[0])
-            res = df[(df['학생 이름'] == n_in) & (df['비밀번호'].astype(str).str.strip() == str(p_in).strip())]
+            
+            # ⭐ [해결 포인트] 제목 줄(컬럼명)의 눈에 안 보이는 앞뒤 공백을 강제로 지워버립니다.
+            df.columns = df.columns.str.strip()
+            
+            res = df[(df['학생 이름'].astype(str).str.strip() == str(n_in).strip()) & (df['비밀번호'].astype(str).str.strip() == str(p_in).strip())]
             
             if not res.empty:
                 for _, row in res.iloc[::-1].iterrows():
@@ -132,7 +135,6 @@ elif menu == "학부모 조회용":
                         m1.metric("과제", row['과제 여부'])
                         m2.metric("출결", row['출결'])
                         
-                        # 단어: 전학년 공통 상세 표기
                         vt = int(row['단어 전체 문항']) if row['단어 전체 문항'] else 0
                         v1 = int(row['단어 1차 맞은 개수']) if row['단어 1차 맞은 개수'] else 0
                         v2 = int(row['단어 2차 맞은 개수']) if row['단어 2차 맞은 개수'] else 0
@@ -140,12 +142,10 @@ elif menu == "학부모 조회용":
                         v_de = f"{v1}/{vt}" + (f" (2차:{v2})" if v2 > 0 else "")
                         m3.metric("단어 점수", f"{v_sc}점", v_de)
                         
-                        # 듣기: 중등만 상세 표기, 초등은 점수만!
                         l_sc = row['듣기 1차 점수'] if row['듣기 1차 점수'] else "0"
                         l_de = row['듣기 2차 점수'] if row['구분'] == "중등" else "" 
                         m4.metric("듣기 점수", f"{l_sc}점", l_de)
                         
-                        # (이하 리딩, 문법, 라이팅, 코멘트 표시 로직...)
                         if row['리딩 수업 내용'] or row['리딩 단어'] != "-" or row['리딩 지문 영작 및 해석'] != "-":
                             st.markdown("---")
                             st.markdown("#### 📖 리딩")
@@ -164,7 +164,7 @@ elif menu == "학부모 조회용":
                             st.info(row['영어홀릭 라이팅'])
 
                         st.markdown("---")
-                        st.warning(f"🌟 **오늘의 수업:** {row['코멘트']}")
+                        st.warning(f"🌟 **선생님 소견:** {row['코멘트']}")
                 st.divider()
                 st.markdown("<div style='background-color:#FEE500; padding:15px; border-radius:10px; color:black; font-weight:bold; text-align:center;'>리포트 보시고 궁금하신 점은 카톡주세요! 😊</div>", unsafe_allow_html=True)
             else: st.error("정보가 일치하지 않습니다.")
